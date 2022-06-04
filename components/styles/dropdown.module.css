@@ -1,0 +1,33 @@
+.container {
+    user-select: none;
+}
+
+.selectedBox {
+    border: 1px solid #000000;
+    padding-left: 4px;
+    padding-right: 4px;
+    text-align: center;
+    width: 100%;
+    margin: auto;
+}
+
+.dropdown {
+    position: absolute;
+    margin: auto;
+    text-align: center;
+}
+
+.dropdownOption {
+    border-right: 1px solid #000000;
+    border-bottom: 1px solid #000000;
+    border-left: 1px solid #000000;
+    background-color: white;
+    transition: 0.2s;
+}
+.dropdownOption:hover{
+    background-color: rgb(187, 187, 187);
+}
+
+.hiddenDropdown {
+    display: none;
+}

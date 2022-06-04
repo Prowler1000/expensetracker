@@ -1,0 +1,72 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tax {
+  id   Int      @id @default(autoincrement())
+  date DateTime @default(now())
+  pst  Float
+  gst  Float
+}
+
+model SubType {
+  id                        Int                @id @default(autoincrement())
+  name                      String
+  primaryTypes              PrimaryType[]
+  SingleExpensesWithType    SingleExpense[]
+  RecurringExpensesWithType RecurringExpense[]
+}
+
+model PrimaryType {
+  id                        Int                @id @default(autoincrement())
+  name                      String
+  subTypes                  SubType[]
+  singleExpensesWithType    SingleExpense[]
+  recurringExpensesWithType RecurringExpense[]
+}
+
+model SingleExpense {
+  id            Int         @id @default(autoincrement())
+  date          DateTime    @default(now())
+  type          PrimaryType @relation(fields: [primaryTypeId], references: [id])
+  subType       SubType     @relation(fields: [subTypeId], references: [id])
+  name          String
+  cost          Float
+  quantity      Float       @default(1)
+  has_gst       Boolean     @default(true)
+  has_pst       Boolean     @default(true)
+  primaryTypeId Int
+  subTypeId     Int
+}
+
+model RecurringExpense {
+  id            Int              @id @default(autoincrement())
+  dateStarted   DateTime
+  dateEnded     DateTime?
+  name          String
+  cost          Float
+  frequency     RecurranceScheme
+  dayRecurring  DateTime?
+  SubType       SubType?         @relation(fields: [subTypeId], references: [id])
+  subTypeId     Int?
+  PrimaryType   PrimaryType?     @relation(fields: [primaryTypeId], references: [id])
+  primaryTypeId Int?
+}
+
+enum RecurranceScheme {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  SEMIANNUALLY
+  ANNUALLY
+}
