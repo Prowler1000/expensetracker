@@ -1,13 +1,11 @@
 import styles from './styles/dropdown.module.css'
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 interface DropdownProps {
     values: string[],
     sort?: boolean,
     reverseSort?: boolean,
-    callback?: (arg0: {
-        selectedValue: string; selectedIndex: number
-    }) => void,
+    callback?: (selectedValue: string, selectedIndex: number, indexSource: number) => void,
     defaultIndex?: number,
     baseKey: string,
     index?: number,
@@ -40,13 +38,25 @@ export default function Dropdown(props: DropdownProps){
             return 0;
         }
     }
+    const initialRanInitialCallback = () => {
+        return false;
+    }
 
     const [show, setShow] = useState(false);
     const [sortedValues, setSortedValues] = useState(initialSortValues);
     const [selectedIndex, setSelectedIndex] = useState(initialSelectedIndex);
+    const [ranInitialCallback, setRanInitialCallback] = useState(initialRanInitialCallback);
 
     useEffect(() => {
         document.addEventListener('click', checkIfUnfocused, false);
+        if (!ranInitialCallback){
+            setRanInitialCallback(true);
+            runCallback(selectedIndex);
+        }
+        if (props.values.length > 0 && !sortedValues.every(x => props.values.includes(x.value))){
+            setSortedValues(initialSortValues);
+            setSelectedIndex(initialSelectedIndex);
+        }
     })
 
     const updateShow = (curVal: boolean) => {
@@ -67,16 +77,22 @@ export default function Dropdown(props: DropdownProps){
         }
     }
 
-    function dropdownOnClick(index: number, event: Event) {
+    function dropdownOnClick(index: number, event: React.MouseEvent<HTMLDivElement>) {
         setSelectedIndex(index);
         setShow(updateShow);
+        runCallback(index);
         event.preventDefault();
+    }
+
+    function runCallback(index: number) {
+        if (props.callback) props.callback(props.values[index], index, 
+            props.index ? props.index : 0);
     }
 
 
     function checkIfUnfocused(e){
         if (show && e.target.id !== `selected-box-${props.baseKey}` && !e.target.id.includes("dropdown-option")){
-            setShow(updateShow);
+            setShow(false);
         }
     }
 

@@ -1,0 +1,23 @@
+.container {
+    position: absolute;
+    display: flex;
+    background-color: rgb(250, 44, 44);
+    padding: 2px;
+    padding-left: 4px;
+    padding-right: 10px;
+
+    -webkit-border-radius: 7px;
+    -webkit-border-top-left-radius: 0;
+    -moz-border-radius: 7px;
+    -moz-border-radius-topleft: 0;
+    border-radius: 7px;
+    border-top-left-radius: 0;
+}
+
+.info{
+
+}
+
+.alertText {
+    margin-left: 3px;
+}

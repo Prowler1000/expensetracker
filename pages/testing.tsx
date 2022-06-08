@@ -2,6 +2,7 @@ import { PrimaryType, SingleExpense, SubType, Tax } from 'prisma/prisma-client'
 import styles from '../styles/testing.module.css'
 import prisma from '../lib/prisma';
 import Dropdown from '../components/dropdown';
+import Textbox from '../components/textbox';
 
 export async function getServerSideProps(context: any) {
     const purchases: SingleExpense[] = await prisma.singleExpense.findMany()
@@ -25,7 +26,7 @@ export default function Testing() {
     return(
         <div className={styles.container}>
             <div>Space taker!</div>
-            {test}
+            <Textbox type="number"></Textbox>
         </div>
     )
 }

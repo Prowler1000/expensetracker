@@ -18,19 +18,28 @@ model Tax {
 }
 
 model SubType {
-  id                        Int                @id @default(autoincrement())
-  name                      String
-  primaryTypes              PrimaryType[]
-  SingleExpensesWithType    SingleExpense[]
-  RecurringExpensesWithType RecurringExpense[]
+  id               Int                     @id @default(autoincrement())
+  name             String                  @unique
+  primaryTypes     SubtypesToPrimaryType[]
+  SingleExpense    SingleExpense[]
+  RecurringExpense RecurringExpense[]
 }
 
 model PrimaryType {
-  id                        Int                @id @default(autoincrement())
-  name                      String
-  subTypes                  SubType[]
-  singleExpensesWithType    SingleExpense[]
-  recurringExpensesWithType RecurringExpense[]
+  id               Int                     @id @default(autoincrement())
+  name             String
+  subTypes         SubtypesToPrimaryType[]
+  SingleExpense    SingleExpense[]
+  RecurringExpense RecurringExpense[]
+}
+
+model SubtypesToPrimaryType {
+  primaryType   PrimaryType @relation(fields: [primaryTypeId], references: [id])
+  primaryTypeId Int
+  subType       SubType     @relation(fields: [subTypeId], references: [id])
+  subTypeId     Int
+
+  @@id([primaryTypeId, subTypeId])
 }
 
 model SingleExpense {
