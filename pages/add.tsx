@@ -5,6 +5,26 @@ import Textbox from '../components/textbox';
 import prisma from '../lib/prisma';
 import { PrimaryType, Prisma, SubType, SubtypesToPrimaryType } from 'prisma/prisma-client';
 
+export async function getServerSideProps(context) {
+    const primaryTypes = await prisma.primaryType.findMany({
+        include: {
+            subTypes: true,
+        }
+    });
+    const subTypes = await prisma.subType.findMany({
+        include: {
+            primaryTypes: true,
+        }
+    })
+
+    const props: AddProps = {
+        primaryTypes: primaryTypes,
+        subTypes: subTypes
+    }
+
+    return { props }
+}
+
 interface AddProps {
     primaryTypes: (PrimaryType & {
         subTypes: SubtypesToPrimaryType[];
@@ -52,26 +72,6 @@ function rowToSerializable(row: Row): Prisma.SingleExpenseCreateInput {
         has_pst: (row.tax === TaxScheme.BOTH || row.tax === TaxScheme.PST)
     }
     return rVal;
-}
-
-export async function getServerSideProps(context) {
-    const primaryTypes = await prisma.primaryType.findMany({
-        include: {
-            subTypes: true,
-        }
-    });
-    const subTypes = await prisma.subType.findMany({
-        include: {
-            primaryTypes: true,
-        }
-    })
-
-    const props: AddProps = {
-        primaryTypes: primaryTypes,
-        subTypes: subTypes
-    }
-
-    return { props }
 }
 
 function Add(props: AddProps) {
