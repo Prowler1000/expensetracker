@@ -1,3 +1,85 @@
 .container {
-    
+    --border: solid 1px;    
+}
+.overview {
+    background-color: teal;
+    display: flex;
+    flex-direction: column;
+}
+.overviewTotal {
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 10%;
+    padding-bottom: 10%;
+}
+.overviewTotalTitle {
+    font-size: 40px;
+}
+.overviewTotalTitle a {
+    font-weight: 600;
+}
+.overviewTotalValue {
+    font-size: 40px;
+}
+
+.primaryCategoryContainer {
+    user-select: none;
+}
+
+.primaryOverviewContainer {
+    background-color: grey;
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    border-bottom: var(--border);
+}
+.primaryOverviewContainer :hover{
+    cursor: pointer;
+}
+.primaryCategoryTitle {
+    width: 50%;
+    text-align: right;
+    padding: 0.5%;
+}
+.primaryCategoryValue {
+    width: 50%;
+    padding: 0.5%;
+}
+
+.subCategorySpacer {
+
+}
+
+.subCategoriesContainer {
+    background-color: antiquewhite;
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+}
+
+.subCategoryContainer {
+    margin: auto;
+    width: 100%;
+    display: flex;
+    border-bottom: var(--border);
+    padding: 1px 0px 1px 0px;
+}
+
+.subCategoryTitle {
+    text-align: right;
+    width: 50%;
+    margin-right: 0.5%;
+}
+
+.subCategoryValue {
+    text-align: left;
+    width: 50%;
+    margin-left: 0.5%;
+}
+
+.displayNone {
+    display: none;
 }
