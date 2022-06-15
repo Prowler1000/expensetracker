@@ -10,7 +10,7 @@ interface TextboxProps {
     id?: string,
     baseKey?: string,
     index?: number,
-    onChangeCallback?: (arg0: ChangeEvent<HTMLInputElement>, arg1?: number) => void;
+    onChangeCallback?: (arg0: ChangeEvent<HTMLInputElement>, arg1: number) => void;
 }
 
 function Textbox(props: TextboxProps) {
@@ -53,7 +53,7 @@ function Textbox(props: TextboxProps) {
             setShowPopup(false);
         }
         setValue(event.target.value);
-        if (props.onChangeCallback) props.onChangeCallback(event, props.index);
+        if (props.onChangeCallback) props.onChangeCallback(event, props.index ? props.index : 0);
         event.preventDefault();
     }
 

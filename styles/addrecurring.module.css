@@ -1,0 +1,33 @@
+.container {
+
+}
+
+.rows {
+    display: flex;
+    flex-direction: column;
+}
+
+.rowContainer {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    padding: 1%;
+}
+.rowObject {
+    margin: auto;
+    padding-left: 1%;
+    padding-right: 1%;
+    width: 13%;
+}
+
+.rowDate {
+
+}
+
+.rowPrimeType {
+
+}
+
+.rowSubType {
+
+}
