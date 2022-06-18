@@ -305,9 +305,17 @@ function Expenses(props: ExpensesProps) {
     })
     singleExpenses.forEach((expense, index) => {
         let pTypeTotal = primaryCategorizedTotals.find(x => x.type.id === expense.primaryTypeId);
-        let sTypeTotal = subCategorizedTotals.find(x => x.primaryType.id === expense.primaryTypeId && x.subType.id === expense.subTypeId);
+        let sTypeTotal = subCategorizedTotals.find(x => x.primaryType?.id === expense.primaryTypeId && x.subType.id === expense.subTypeId);
         if (pTypeTotal) pTypeTotal.total += (expense.cost * expense.taxRate);
         if (sTypeTotal) sTypeTotal.total += (expense.cost * expense.taxRate);
+    })
+    recurringExpenses.forEach((expense, index) => {
+        if (fromDate.getTime() <= expense.lastOccuranceDate){
+            let pTypeTotal = primaryCategorizedTotals.find(x => x.type.id === expense.primaryTypeId);
+            let sTypeTotal = subCategorizedTotals.find(x => x.primaryType?.id === expense.primaryTypeId && x.subType.id === expense.subTypeId);
+            if (pTypeTotal) pTypeTotal.total += (expense.cost * expense.taxRate);
+            if (sTypeTotal) sTypeTotal.total += (expense.cost * expense.taxRate);
+        }
     })
 
     function toggleShowSubCategories(event: React.MouseEvent<HTMLDivElement, MouseEvent>, index: number) {
