@@ -4,173 +4,6 @@ import { PrimaryType, RecurringExpense, SingleExpense, SubType, Tax, SubtypesToP
 import { useState } from 'react';
 import { style } from '@mui/system';
 
-export async function getServerSideProps(context) {
-    console.log(typeof context);
-    let monthPrior = new Date();
-    monthPrior.setMonth(monthPrior.getMonth() - 1);
-
-    let dbSingleExpenses = await prisma.singleExpense.findMany({
-        where: {
-            date: {
-                gte: monthPrior.toISOString()
-            }
-        }
-    });
-    let dbRecurringExpenses = await prisma.recurringExpense.findMany();
-    let dbTaxes = await prisma.tax.findMany();
-    let dbPrimaryTypes = await prisma.primaryType.findMany();
-    let dbSubTypes = await prisma.subType.findMany({
-        include: {
-            primaryTypes: true,
-        }
-    });
-
-    function calcTaxRate( expense: SingleExpense): number {
-        let rate = 1.0;
-        if (dbTaxes.length > 0) {
-            let bestFit: Tax = dbTaxes[0];
-            for (let i = 1; i < dbTaxes.length; i++){
-                if (dbTaxes[i].date > expense.date) break;
-                bestFit = dbTaxes[i];
-            }
-            if (expense.has_gst) rate += (bestFit.gst / 100);
-            if (expense.has_pst) rate += (bestFit.pst / 100);
-        }
-        return rate;
-    }
-    function calcRecurringTaxRate(expense: RecurringExpense): number {
-        let rate = 1.0
-        if (dbTaxes.length > 0) {
-            let bestFit: Tax = dbTaxes[0];
-        }
-        return rate;
-    }
-    function daysInMonth(month: number) {
-        if (month < 0) month = 11;
-        var now = new Date();
-        return new Date(now.getFullYear(), month+1, 0).getDate();
-    }
-    function getLastOccurance(expense: RecurringExpense): Date {
-        let lastOccurance = new Date();
-        if (expense.frequency === RecurranceScheme.DAILY) {
-            // Shouldn't do anything, it happens every day
-        } 
-        else if (expense.frequency === RecurranceScheme.WEEKLY) {
-            let curDayOfWeek = new Date().getDay();
-            if (expense.dateStarted.getDay() <= curDayOfWeek){
-                const dayDifference = curDayOfWeek - expense.dateStarted.getDay();
-                lastOccurance.setDate(lastOccurance.getDate() - dayDifference);
-            }
-        } 
-        else if (expense.frequency === RecurranceScheme.BIWEEKLY) {
-            // Gotta figure this out!
-            console.error("Haven't implemented bi-weekly stuff yet!");
-        } 
-        else if (expense.frequency === RecurranceScheme.MONTHLY) {
-            let expenseDayOfMonth = expense.dateStarted.getDate();
-            let curDayOfMonth = new Date().getDate();
-            let daysInCurMonth = daysInMonth(new Date().getMonth());
-            if (expenseDayOfMonth === curDayOfMonth) {
-                lastOccurance.setDate(curDayOfMonth);
-            }
-            else if (expenseDayOfMonth > curDayOfMonth && !(expenseDayOfMonth > daysInCurMonth)) {
-                lastOccurance.setDate(daysInCurMonth);
-            } 
-            else if (expenseDayOfMonth < curDayOfMonth) {
-                lastOccurance.setDate(expenseDayOfMonth);
-            }
-            else if (expenseDayOfMonth > daysInCurMonth) {
-                const prevMonth = new Date().getMonth() - 1;
-                const daysInPrevMonth = daysInMonth(prevMonth);
-                if (daysInPrevMonth < expenseDayOfMonth) {
-                    lastOccurance.setMonth(prevMonth, daysInPrevMonth);
-                }
-                else {
-                    lastOccurance.setMonth(prevMonth, expenseDayOfMonth);
-                }
-            }
-        } 
-        else if (expense.frequency === RecurranceScheme.QUARTERLY) {
-            
-        } 
-        else if (expense.frequency === RecurranceScheme.SEMIANNUALLY) {
-
-        } 
-        else if (expense.frequency === RecurranceScheme.ANNUALLY) {
-
-        }
-        return new Date(lastOccurance.toDateString());
-    }
-    function getNextOccurance(expense: RecurringExpense, lastOccurance: Date): Date {
-        ///!!! CHANGE TO SWITCH/CASE! THIS IS IMPOSSIBLE TO READ
-        let nextOccurance = new Date(lastOccurance.toDateString());
-        if (expense.frequency === RecurranceScheme.DAILY) {
-            nextOccurance.setDate(nextOccurance.getDate() + 1);
-        } else if (expense.frequency === RecurranceScheme.WEEKLY) {
-            nextOccurance.setDate(nextOccurance.getDate() + 7);
-        } else if (expense.frequency === RecurranceScheme.BIWEEKLY) {
-            nextOccurance.setDate(nextOccurance.getDate() + 14);
-        } else if (expense.frequency === RecurranceScheme.MONTHLY) {
-            nextOccurance.setMonth(nextOccurance.getMonth() + 1);
-        } else if (expense.frequency === RecurranceScheme.QUARTERLY) {
-            nextOccurance.setMonth(nextOccurance.getMonth() + 3);
-        } else if (expense.frequency === RecurranceScheme.SEMIANNUALLY) {
-            nextOccurance.setMonth(nextOccurance.getMonth() + 6);
-        } else if (expense.frequency === RecurranceScheme.ANNUALLY) {
-            nextOccurance.setFullYear(nextOccurance.getFullYear() + 1);
-        }
-        return nextOccurance;
-    }
-
-    const props: ExpensesProps = {
-        earliestDate: monthPrior.getTime(),
-        singleExpenses: dbSingleExpenses.map(x => {
-            let singleExpense: SerializableSingleExpense = {
-                id: x.id,
-                date: x.date.getTime(),
-                name: x.name,
-                cost: x.cost,
-                quantity: x.quantity,
-                has_gst: x.has_gst,
-                has_pst: x.has_pst,
-                primaryTypeId: x.primaryTypeId,
-                subTypeId: x.subTypeId,
-                taxRate: calcTaxRate(x)
-            }
-            return singleExpense;
-        }),
-        recurringExpenses: dbRecurringExpenses.map(x => {
-            let recurringExpense: SerializableRecurringExpense = {
-                id: x.id,
-                dateStarted: x.dateStarted.getTime(),
-                frequency: x.frequency,
-                name: x.name,
-                cost: x.cost,
-                has_gst: x.has_gst,
-                has_pst: x.has_pst,
-                primaryTypeId: x.primaryTypeId,
-                subTypeId: x.subTypeId,
-                taxRate: calcRecurringTaxRate(x),
-                lastOccuranceDate: getLastOccurance(x).getTime(),
-                nextOccuranceDate: getNextOccurance(x, getLastOccurance(x)).getTime()
-            }
-            return recurringExpense;
-        }),
-        taxes: dbTaxes.map(x => {
-            let tax: SerializableTax = {
-                id: x.id,
-                date: x.date.getMilliseconds(),
-                pst: x.pst,
-                gst: x.gst,
-            }
-            return tax;
-        }),
-        primaryTypes: dbPrimaryTypes,
-        subTypes: dbSubTypes
-    };
-    return {props};
-}
-
 interface ExpensesProps {
     earliestDate: number
     singleExpenses: SerializableSingleExpense[],
@@ -225,6 +58,184 @@ interface SubTypeTotal {
     primaryType?: PrimaryType,
     subType: SubType,
     total: number
+}
+
+export async function getServerSideProps(context) {
+    console.log(typeof context);
+    let monthPrior = new Date();
+    monthPrior.setMonth(monthPrior.getMonth() - 1);
+
+    let dbSingleExpenses = await prisma.singleExpense.findMany({
+        where: {
+            date: {
+                gte: monthPrior.toISOString()
+            }
+        }
+    });
+    let dbRecurringExpenses = await prisma.recurringExpense.findMany();
+    let dbTaxes = await prisma.tax.findMany();
+    let dbPrimaryTypes = await prisma.primaryType.findMany();
+    let dbSubTypes = await prisma.subType.findMany({
+        include: {
+            primaryTypes: true,
+        }
+    });
+
+    function calcTaxRate( expense: SingleExpense): number {
+        let rate = 1.0;
+        if (dbTaxes.length > 0) {
+            let bestFit: Tax = dbTaxes[0];
+            for (let i = 1; i < dbTaxes.length; i++){
+                if (dbTaxes[i].date > expense.date) break;
+                bestFit = dbTaxes[i];
+            }
+            if (expense.has_gst) rate += (bestFit.gst / 100);
+            if (expense.has_pst) rate += (bestFit.pst / 100);
+        }
+        return rate;
+    }
+    
+    function calcRecurringTaxRate(expense: RecurringExpense, lastOccurance: Date): number {
+        let rate = 1.0
+        if (dbTaxes.length > 0) {
+            let bestFit: Tax = dbTaxes[0];
+            for (let i = 1; i < dbTaxes.length; i++){
+                if (dbTaxes[i].date > lastOccurance) break;
+                bestFit = dbTaxes[i];
+            }
+            if (expense.has_gst) rate += (bestFit.gst / 100);
+            if (expense.has_pst) rate += (bestFit.pst / 100);
+        }
+        return rate;
+    }
+
+    function daysInMonth(month: number) {
+        if (month < 0) month = 11;
+        var now = new Date();
+        return new Date(now.getFullYear(), month+1, 0).getDate();
+    }
+
+    function getLastOccurance(expense: RecurringExpense): Date {
+        let lastOccurance = new Date();
+        if (expense.frequency === RecurranceScheme.DAILY) {
+            // Shouldn't do anything, it happens every day
+        } 
+        else if (expense.frequency === RecurranceScheme.WEEKLY) {
+            let curDayOfWeek = new Date().getDay();
+            if (expense.dateStarted.getDay() <= curDayOfWeek){
+                const dayDifference = curDayOfWeek - expense.dateStarted.getDay();
+                lastOccurance.setDate(lastOccurance.getDate() - dayDifference);
+            }
+        } 
+        else if (expense.frequency === RecurranceScheme.BIWEEKLY) {
+            // Gotta figure this out!
+            console.error("Haven't implemented bi-weekly stuff yet!");
+        } 
+        else if (expense.frequency === RecurranceScheme.MONTHLY) {
+            let expenseDayOfMonth = expense.dateStarted.getDate();
+            let curDayOfMonth = new Date().getDate();
+            let daysInCurMonth = daysInMonth(new Date().getMonth());
+            if (expenseDayOfMonth === curDayOfMonth) {
+                lastOccurance.setDate(curDayOfMonth);
+            }
+            else if (expenseDayOfMonth > curDayOfMonth && !(expenseDayOfMonth > daysInCurMonth)) {
+                lastOccurance.setDate(daysInCurMonth);
+            } 
+            else if (expenseDayOfMonth < curDayOfMonth) {
+                lastOccurance.setDate(expenseDayOfMonth);
+            }
+            else if (expenseDayOfMonth > daysInCurMonth) {
+                const prevMonth = new Date().getMonth() - 1;
+                const daysInPrevMonth = daysInMonth(prevMonth);
+                if (daysInPrevMonth < expenseDayOfMonth) {
+                    lastOccurance.setMonth(prevMonth, daysInPrevMonth);
+                }
+                else {
+                    lastOccurance.setMonth(prevMonth, expenseDayOfMonth);
+                }
+            }
+        } 
+        else if (expense.frequency === RecurranceScheme.QUARTERLY) {
+            
+        } 
+        else if (expense.frequency === RecurranceScheme.SEMIANNUALLY) {
+
+        } 
+        else if (expense.frequency === RecurranceScheme.ANNUALLY) {
+
+        }
+        return new Date(lastOccurance.toDateString());
+    }
+
+    function getNextOccurance(expense: RecurringExpense, lastOccurance: Date): Date {
+        ///!!! CHANGE TO SWITCH/CASE! THIS IS IMPOSSIBLE TO READ
+        let nextOccurance = new Date(lastOccurance.toDateString());
+        if (expense.frequency === RecurranceScheme.DAILY) {
+            nextOccurance.setDate(nextOccurance.getDate() + 1);
+        } else if (expense.frequency === RecurranceScheme.WEEKLY) {
+            nextOccurance.setDate(nextOccurance.getDate() + 7);
+        } else if (expense.frequency === RecurranceScheme.BIWEEKLY) {
+            nextOccurance.setDate(nextOccurance.getDate() + 14);
+        } else if (expense.frequency === RecurranceScheme.MONTHLY) {
+            nextOccurance.setMonth(nextOccurance.getMonth() + 1);
+        } else if (expense.frequency === RecurranceScheme.QUARTERLY) {
+            nextOccurance.setMonth(nextOccurance.getMonth() + 3);
+        } else if (expense.frequency === RecurranceScheme.SEMIANNUALLY) {
+            nextOccurance.setMonth(nextOccurance.getMonth() + 6);
+        } else if (expense.frequency === RecurranceScheme.ANNUALLY) {
+            nextOccurance.setFullYear(nextOccurance.getFullYear() + 1);
+        }
+        return nextOccurance;
+    }
+
+    const props: ExpensesProps = {
+        earliestDate: monthPrior.getTime(),
+        singleExpenses: dbSingleExpenses.map(x => {
+            let singleExpense: SerializableSingleExpense = {
+                id: x.id,
+                date: x.date.getTime(),
+                name: x.name,
+                cost: x.cost,
+                quantity: x.quantity,
+                has_gst: x.has_gst,
+                has_pst: x.has_pst,
+                primaryTypeId: x.primaryTypeId,
+                subTypeId: x.subTypeId,
+                taxRate: calcTaxRate(x)
+            }
+            return singleExpense;
+        }),
+        recurringExpenses: dbRecurringExpenses.map(x => {
+            const lastOccurance = getLastOccurance(x);
+            let recurringExpense: SerializableRecurringExpense = {
+                id: x.id,
+                dateStarted: x.dateStarted.getTime(),
+                frequency: x.frequency,
+                name: x.name,
+                cost: x.cost,
+                has_gst: x.has_gst,
+                has_pst: x.has_pst,
+                primaryTypeId: x.primaryTypeId,
+                subTypeId: x.subTypeId,
+                taxRate: calcRecurringTaxRate(x, lastOccurance),
+                lastOccuranceDate: lastOccurance.getTime(),
+                nextOccuranceDate: getNextOccurance(x, lastOccurance).getTime()
+            }
+            return recurringExpense;
+        }),
+        taxes: dbTaxes.map(x => {
+            let tax: SerializableTax = {
+                id: x.id,
+                date: x.date.getMilliseconds(),
+                pst: x.pst,
+                gst: x.gst,
+            }
+            return tax;
+        }),
+        primaryTypes: dbPrimaryTypes,
+        subTypes: dbSubTypes
+    };
+    return {props};
 }
 
 function Expenses(props: ExpensesProps) {
