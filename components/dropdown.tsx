@@ -63,7 +63,7 @@ export default function Dropdown(props: DropdownProps){
         return !curVal;
     }
 
-    function handleClick(event) {
+    function handleClick(event: any) {
         setShow(updateShow);
         const selected_box = document.getElementById(`selected-box-${props.baseKey}`);
         if (selected_box){
@@ -90,7 +90,7 @@ export default function Dropdown(props: DropdownProps){
     }
 
 
-    function checkIfUnfocused(e){
+    function checkIfUnfocused(e: any){
         if (show && e.target.id !== `selected-box-${props.baseKey}` && !e.target.id.includes("dropdown-option")){
             setShow(false);
         }

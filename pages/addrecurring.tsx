@@ -16,7 +16,7 @@ interface TypeMap {
     subTypes: SubType[],
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: any) {
     const dbPrimaryTypes = await prisma.primaryType.findMany({
         include: {
             subTypes: true,
@@ -26,9 +26,12 @@ export async function getServerSideProps(context) {
 
     // Create type maps (I really need to get better at naming things..)
     let typeMaps: TypeMap[] = []; // Create object to be sent as prop
+    function notUndefined<TValue>(value: TValue | undefined): value is TValue {
+        return value !== null && value !== undefined;
+    }
     dbPrimaryTypes.forEach((primeType, index) => {
         const subTypes = primeType.subTypes.map(x => dbSubTypes.find(sub => sub.id === x.subTypeId));
-        const filteredSubTypes: SubType[] = subTypes.filter(x => x); // Should filter anything that is null or undefined. Ignoring TS warning.
+        const filteredSubTypes: SubType[] = subTypes.filter(notUndefined); // Should filter anything that is null or undefined. Ignoring TS warning.
         typeMaps.push({
             primaryType: primeType,
             subTypes: filteredSubTypes
@@ -161,7 +164,7 @@ function AddRecurring(props: AddRecurringProps) {
     }
     function updateFrequency(rows: RecurringRow[], index: number, frequency: string): RecurringRow[] {
         let rowsCopy = [...rows];
-        rowsCopy[index].frequency = Frequency[frequency];
+        rowsCopy[index].frequency = Frequency[frequency as keyof typeof Frequency];
         return rowsCopy;
     }
 

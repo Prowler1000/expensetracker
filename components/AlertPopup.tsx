@@ -14,7 +14,7 @@ function AlertPopup(props: AlertPopupProps) {
     useEffect(() => {
         if (props.timeout) {
             const timeId = setTimeout(() => {
-                props.timeout.callback();
+                props.timeout?.callback();
             }, props.timeout.time * 1000)
 
             return () => {

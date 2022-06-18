@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client'
 import { create } from 'domain';
 import { NextApiRequest, NextApiResponse } from 'next';
-import prisma from '../../lib/prisma.ts'
+import prisma from '../../lib/prisma'
 
 export default async function handle(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {

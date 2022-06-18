@@ -1,7 +1,7 @@
 import { Prisma, RecurranceScheme } from '@prisma/client'
 import { create } from 'domain';
 import { NextApiRequest, NextApiResponse } from 'next';
-import prisma from '../../lib/prisma.ts'
+import prisma from '../../lib/prisma'
 import { SerializableRecurringExpense } from '../../lib/api-objects';
 
 export default async function handle(req: NextApiRequest, res: NextApiResponse) {
@@ -13,7 +13,7 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
                 dateStarted: new Date(x.date).toISOString(),
                 name: x.name,
                 cost: x.cost,
-                frequency: RecurranceScheme[x.frequencyString],
+                frequency: RecurranceScheme[x.frequencyString as keyof typeof RecurranceScheme],
                 primaryTypeId: x.primaryType.id,
                 subTypeId: x.subType.id
             }
