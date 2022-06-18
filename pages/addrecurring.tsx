@@ -5,6 +5,7 @@ import { type } from 'os';
 import { useState } from 'react';
 import Dropdown from '../components/dropdown';
 import Textbox from '../components/textbox';
+import { SerializableRecurringExpense } from '../lib/api-objects';
 
 interface AddRecurringProps {
     typeMaps: TypeMap[],
@@ -72,9 +73,63 @@ function AddRecurring(props: AddRecurringProps) {
         
         return [firstRow,];
     }
+    const initialCanRemove = () => {
+        return false;
+    }
 
     const [rows, setRows] = useState(initialRows);
-    console.log(rows);
+    const [canRemove, setCanRemove] = useState(initialCanRemove)
+
+    const addRow = () => {
+        let copy = [...rows];
+        let newRow: RecurringRow = {            
+            date: new Date(),
+            primaryType: props.typeMaps[0].primaryType,
+            subType: props.typeMaps[0].subTypes[0],
+            name: '',
+            cost: 0.0,
+            frequency: Frequency.MONTHLY
+        }
+        copy.push(newRow);
+        if (!canRemove && copy.length > 1) setCanRemove(true);
+        setRows(copy)
+    }
+    const removeRow = () => {
+        if (!canRemove) return;
+        let copy = [...rows];
+        copy.pop();
+        if (copy.length < 2) setCanRemove(false);
+        setRows(copy);
+    }
+
+    function pushToDb() {
+        if (rows.some(x => isNaN(x.date.valueOf()))) {
+            console.error("INVALID DATE");
+            alert("Invalid date");
+            return;
+        }
+        const jsonData: SerializableRecurringExpense[] = rows.map(row => {
+            return {
+                date: new Date(row.date.toDateString()).getTime(), // Strip time from date
+                primaryType: row.primaryType,
+                subType: row.subType,
+                name: row.name,
+                cost: row.cost,
+                frequencyString: Frequency[row.frequency],
+                frequencyIndex: row.frequency
+            }
+        })
+
+        try {
+            fetch('/api/recurring-expense', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json'},
+                body: JSON.stringify(jsonData)
+            })
+        } catch (error) {
+            console.error(error);
+        }
+    }
 
     function updateDate(rows: RecurringRow[], index: number, date: string): RecurringRow[] {
         let rowsCopy = [...rows];
@@ -88,6 +143,7 @@ function AddRecurring(props: AddRecurringProps) {
         return rowsCopy;
     }
     function updateSubType(rows: RecurringRow[], index: number, selectedIndex: number): RecurringRow[] {
+        console.log(selectedIndex);
         let rowsCopy = [...rows];
         const subTypes = props.typeMaps.find(x => x.primaryType.id === rows[index].primaryType.id)?.subTypes;
         if (subTypes) rowsCopy[index].subType = subTypes[selectedIndex];
@@ -109,7 +165,8 @@ function AddRecurring(props: AddRecurringProps) {
         return rowsCopy;
     }
 
-    const InputRow = (row: RecurringRow, index: number) => {
+    const InputRow = (index: number) => {
+        const row = rows[index];
         const baseKey = `recurring-row-${index}`;
         const subTypes = props.typeMaps.find(x => x.primaryType.id === row.primaryType.id)?.subTypes.map(x => x.name)
         return (
@@ -117,6 +174,7 @@ function AddRecurring(props: AddRecurringProps) {
                 <div className={`${styles.rowObject} ${styles.rowDate}`} key={`${baseKey}-date-container`}>
                     <Textbox
                         baseKey={`${baseKey}-date`} 
+                        index={index}
                         defaultValue={row.date.toDateString()} 
                         onChangeCallback={(changeEvent, index) => 
                             {setRows(curVal => updateDate(curVal, index, changeEvent.target.value))}}
@@ -126,6 +184,7 @@ function AddRecurring(props: AddRecurringProps) {
                     <div className={`${styles.rowObject} ${styles.rowPrimeType}`} key={`${baseKey}-primetype-container`}>
                         <Dropdown 
                         baseKey={`${baseKey}-primeVal`}
+                        index={index}
                         values={props.typeMaps.map(x => x.primaryType.name)} 
                         defaultIndex={props.typeMaps.findIndex(x => x.primaryType.id === row.primaryType.id)}
                         callback={(selectedValue, selectedIndex, indexSource) => 
@@ -136,6 +195,7 @@ function AddRecurring(props: AddRecurringProps) {
                 <div className={`${styles.rowObject} ${styles.rowSubType}`} key={`${baseKey}-subtype-container`}>
                     <Dropdown
                         baseKey={`${baseKey}-subVal`}
+                        index={index}
                         values={subTypes ? subTypes : ['']}
                         callback={(_, selectedIndex, indexSource) =>
                             setRows(curVal => updateSubType(curVal, indexSource, selectedIndex))}
@@ -145,6 +205,7 @@ function AddRecurring(props: AddRecurringProps) {
                 <div className={`${styles.rowObject} ${styles.rowNameInput}`} key={`${baseKey}-name-container`}>
                     <Textbox
                         baseKey={`${baseKey}-name`}
+                        index={index}
                         onChangeCallback={(changeEvent, index) => 
                             setRows(curVal => updateName(curVal, index, changeEvent.target.value))}
                     />
@@ -153,6 +214,7 @@ function AddRecurring(props: AddRecurringProps) {
                 <div className={`${styles.rowObject} ${styles.rowCostInput}`} key={`${baseKey}-cost-container`}>
                     <Textbox
                             baseKey={`${baseKey}-cost`}
+                            index={index}
                             type="number"
                             onChangeCallback={(changeEvent, index) => 
                                 setRows(curVal => updateCost(curVal, index, changeEvent.target.value))}
@@ -162,8 +224,10 @@ function AddRecurring(props: AddRecurringProps) {
                 <div className={`${styles.rowObject} ${styles.rowFrequencyInput}`} key={`${baseKey}-frequency-container`}>
                     <Dropdown
                             baseKey={`${baseKey}-subVal`}
+                            index={index}
                             values={Object.keys(Frequency).filter((item) => isNaN(Number(item)))}
-                                sort={false}
+                            defaultIndex={row.frequency}
+                            sort={false}
                             callback={(selectedValue, _, indexSource) =>
                                 setRows(curVal => updateFrequency(curVal, indexSource, selectedValue))}
                     />
@@ -175,7 +239,13 @@ function AddRecurring(props: AddRecurringProps) {
     return (
         <div className={styles.container}>
             <div className={styles.rows}>
-                {rows.map((row, index) => InputRow(row, index))}
+                {rows.map((row, index) => InputRow(index))}
+            </div>            
+            <div className={styles.footer_spacer} id="footer_spacer"></div>
+            <div className={styles.footer} id="footer">
+                <button className={styles.addRowButton} onClick={addRow}>Add Row</button>
+                <button className={canRemove ? styles.removeRowButton : styles.disabledButton} onClick={removeRow}>Remove Row</button>
+                <button className={styles.saveAllButton} onClick={pushToDb}>Push to DB</button>
             </div>
         </div>
     )

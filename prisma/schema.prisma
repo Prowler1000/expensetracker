@@ -64,10 +64,12 @@ model RecurringExpense {
   cost          Float
   frequency     RecurranceScheme
   dayRecurring  DateTime?
-  SubType       SubType?         @relation(fields: [subTypeId], references: [id])
-  subTypeId     Int?
-  PrimaryType   PrimaryType?     @relation(fields: [primaryTypeId], references: [id])
-  primaryTypeId Int?
+  has_gst       Boolean          @default(true)
+  has_pst       Boolean          @default(true)
+  SubType       SubType          @relation(fields: [subTypeId], references: [id])
+  subTypeId     Int
+  PrimaryType   PrimaryType      @relation(fields: [primaryTypeId], references: [id])
+  primaryTypeId Int
 }
 
 enum RecurranceScheme {

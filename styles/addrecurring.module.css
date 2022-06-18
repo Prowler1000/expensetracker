@@ -31,3 +31,52 @@
 .rowSubType {
 
 }
+
+.footer_spacer{
+    bottom: 0;
+}
+
+.footer {
+    display: flex;
+    justify-content: right;
+
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+    background-color: white;
+}
+
+.footer * {
+    font-size: 20px;
+}
+
+.footer button {
+    margin: 5px;
+    height: 100%;
+    flex-grow: 0;
+
+    padding: 5px;
+    padding-left: 20px;
+    padding-right: 20px;
+
+    color: white;
+
+    border: none;
+}
+.footer button:hover {
+    filter: brightness(.9);
+}
+.footer button:active {
+    box-shadow: inset 0px 0px 26px 14px rgba(0,0,0,0.25);
+}
+.addRowButton {
+    background-color: rgb(16, 185, 16);
+}
+
+.removeRowButton {
+    background-color: rgb(194, 45, 45);
+}
+
+.saveAllButton {
+    background-color: rgb(50, 50, 219);
+}
