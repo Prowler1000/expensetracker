@@ -246,6 +246,9 @@ function Expenses(props: ExpensesProps) {
     const initialSingleExpenses = () => {
         return props.singleExpenses;
     }
+    const initialRecurringExpenses = () => {
+        return props.recurringExpenses;
+    }
     const initialTaxes = () => {
         return props.taxes;
     }
@@ -265,6 +268,7 @@ function Expenses(props: ExpensesProps) {
 
     const [fromDate, setFromDate] = useState(initialFromDate);
     const [singleExpenses, setSingleExpenses] = useState(initialSingleExpenses);
+    const [recurringExpenses, setRecurringExpenses] = useState(initialRecurringExpenses);
     const [taxes, setTaxes] = useState(initialTaxes);
     const [primaryTypes, setPrimaryTypes] = useState(initialPrimaryTypes);
     const [subTypes, setSubTypes] = useState(initialSubTypes);
@@ -274,6 +278,11 @@ function Expenses(props: ExpensesProps) {
     singleExpenses.forEach(expense => {
         absoluteTotalNumber += (expense.cost * expense.taxRate)
     });
+    recurringExpenses.forEach(expense => {
+        if (fromDate.getTime() <= expense.lastOccuranceDate){
+            absoluteTotalNumber += (expense.cost * expense.taxRate);
+        }
+    })
     const absoluteTotal= absoluteTotalNumber.toFixed(2);
 
     let primaryCategorizedTotals: PrimeTypeTotal[] = [];
