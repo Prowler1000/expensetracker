@@ -60,7 +60,7 @@ interface SubTypeTotal {
     total: number
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: any) {
     console.log(typeof context);
     let monthPrior = new Date();
     monthPrior.setMonth(monthPrior.getMonth() - 1);
@@ -380,7 +380,7 @@ function Expenses(props: ExpensesProps) {
                 <div className={styles.categorizedTotals}>
                     {primaryCategorizedTotals.map((primeType, index) => {
                         return PrimaryCategoryTotal(primeType, 
-                            subCategorizedTotals.filter(x => x.primaryType.id === primeType.type.id),
+                            subCategorizedTotals.filter(x => x.primaryType?.id === primeType.type.id),
                             index)
                     })}
                 </div>

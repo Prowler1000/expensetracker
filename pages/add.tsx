@@ -5,7 +5,7 @@ import Textbox from '../components/textbox';
 import prisma from '../lib/prisma';
 import { PrimaryType, Prisma, SubType, SubtypesToPrimaryType } from 'prisma/prisma-client';
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: any) {
     const primaryTypes = await prisma.primaryType.findMany({
         include: {
             subTypes: true,
