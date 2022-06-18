@@ -318,6 +318,8 @@ function Expenses(props: ExpensesProps) {
         }
     })
 
+    // Dev branch change test
+
     function toggleShowSubCategories(event: React.MouseEvent<HTMLDivElement, MouseEvent>, index: number) {
         let showSubCategoriesCopy = [...showSubCategories];
         showSubCategoriesCopy[index] = !showSubCategoriesCopy[index];
