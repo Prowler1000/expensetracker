@@ -6,7 +6,7 @@ import prisma from '../../lib/prisma'
 export default async function handle(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
         if (req.body.length > 1) {
-            let data = req.body.map(val => {
+            let data = req.body.map((val: { date: any; type: { connect: { id: any; }; }; subType: { connect: { id: any; }; }; name: any; cost: any; quantity: any; has_gst: any; has_pst: any; }) => {
                 let rVal;
                 rVal = {
                     date: val.date,
