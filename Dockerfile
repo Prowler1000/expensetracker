@@ -49,8 +49,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
-EXPOSE 3000
+EXPOSE 57896
 
-ENV PORT 3000
+ENV PORT 57896
+
+ENV DATABASE_URL "postgresql://expenses:stsRover44@192.168.0.50:5432/expensesprod?schema=public"
 
 CMD ["node", "server.js"]
