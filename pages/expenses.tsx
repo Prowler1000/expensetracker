@@ -61,7 +61,6 @@ interface SubTypeTotal {
 }
 
 export async function getServerSideProps(context: any) {
-    console.log(typeof context);
     let monthPrior = new Date();
     monthPrior.setMonth(monthPrior.getMonth() - 1);
 
@@ -239,7 +238,6 @@ export async function getServerSideProps(context: any) {
 }
 
 function Expenses(props: ExpensesProps) {
-    console.log(props);
     const initialFromDate = () => {
         return new Date(props.earliestDate);
     }
