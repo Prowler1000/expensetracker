@@ -60,7 +60,15 @@ interface RecurringRow {
     subType: SubType,
     name: string,
     cost: number,
-    frequency: Frequency
+    frequency: Frequency,
+    tax_scheme: TaxScheme
+}
+
+enum TaxScheme {
+    BOTH,
+    GST,
+    PST,
+    NONE
 }
 
 function AddRecurring(props: AddRecurringProps) {
@@ -71,7 +79,8 @@ function AddRecurring(props: AddRecurringProps) {
             subType: props.typeMaps[0].subTypes[0],
             name: '',
             cost: 0.0,
-            frequency: Frequency.MONTHLY
+            frequency: Frequency.MONTHLY,
+            tax_scheme: TaxScheme.BOTH,
         }
         
         return [firstRow,];
@@ -91,7 +100,8 @@ function AddRecurring(props: AddRecurringProps) {
             subType: props.typeMaps[0].subTypes[0],
             name: '',
             cost: 0.0,
-            frequency: Frequency.MONTHLY
+            frequency: Frequency.MONTHLY,
+            tax_scheme: TaxScheme.BOTH,
         }
         copy.push(newRow);
         if (!canRemove && copy.length > 1) setCanRemove(true);
@@ -119,7 +129,9 @@ function AddRecurring(props: AddRecurringProps) {
                 name: row.name,
                 cost: row.cost,
                 frequencyString: Frequency[row.frequency],
-                frequencyIndex: row.frequency
+                frequencyIndex: row.frequency,
+                has_gst: row.tax_scheme == TaxScheme.BOTH || row.tax_scheme == TaxScheme.GST,
+                has_pst: row.tax_scheme == TaxScheme.BOTH || row.tax_scheme == TaxScheme.PST,
             }
         })
 
@@ -164,6 +176,14 @@ function AddRecurring(props: AddRecurringProps) {
     function updateFrequency(rows: RecurringRow[], index: number, frequency: string): RecurringRow[] {
         let rowsCopy = [...rows];
         rowsCopy[index].frequency = Frequency[frequency as keyof typeof Frequency];
+        return rowsCopy;
+    }
+    function updateTax(rows: RecurringRow[], index: number, value: string): RecurringRow[] {
+        let rowsCopy = [...rows];
+        if (value === "GST & PST") rowsCopy[index].tax_scheme = TaxScheme.BOTH;
+        else if (value === "GST") rowsCopy[index].tax_scheme = TaxScheme.GST;
+        else if (value === "PST") rowsCopy[index].tax_scheme = TaxScheme.PST;
+        else rowsCopy[index].tax_scheme = TaxScheme.NONE;
         return rowsCopy;
     }
 
@@ -225,13 +245,24 @@ function AddRecurring(props: AddRecurringProps) {
 
                 <div className={`${styles.rowObject} ${styles.rowFrequencyInput}`} key={`${baseKey}-frequency-container`}>
                     <Dropdown
-                            baseKey={`${baseKey}-subVal`}
+                            baseKey={`${baseKey}-frequency`}
                             index={index}
                             values={Object.keys(Frequency).filter((item) => isNaN(Number(item)))}
                             defaultIndex={row.frequency}
                             sort={false}
                             callback={(selectedValue, _, indexSource) =>
                                 setRows(curVal => updateFrequency(curVal, indexSource, selectedValue))}
+                    />
+                </div>
+
+                <div className={`${styles.rowObject} ${styles.rowTaxScheme}`} key={`${baseKey}-tax-container`}>
+                    <Dropdown
+                            baseKey={`${baseKey}-taxScheme`}
+                            index={index}
+                            values={["GST & PST", "GST", "PST", "NONE"]}
+                            sort={false}
+                            callback={(selectedValue, _, indexSource) =>
+                                setRows(curVal => updateTax(curVal, indexSource, selectedValue))}
                     />
                 </div>
             </div>

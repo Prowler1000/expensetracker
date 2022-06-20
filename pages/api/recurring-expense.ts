@@ -14,7 +14,9 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
                 cost: x.cost,
                 frequency: RecurranceScheme[x.frequencyString as keyof typeof RecurranceScheme],
                 primaryTypeId: x.primaryType.id,
-                subTypeId: x.subType.id
+                subTypeId: x.subType.id,
+                has_gst: x.has_gst,
+                has_pst: x.has_pst
             }
             return entry;
         })
