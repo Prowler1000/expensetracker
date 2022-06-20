@@ -146,7 +146,6 @@ function AddRecurring(props: AddRecurringProps) {
         return rowsCopy;
     }
     function updateSubType(rows: RecurringRow[], index: number, selectedIndex: number): RecurringRow[] {
-        console.log(selectedIndex);
         let rowsCopy = [...rows];
         const subTypes = props.typeMaps.find(x => x.primaryType.id === rows[index].primaryType.id)?.subTypes;
         if (subTypes) rowsCopy[index].subType = subTypes[selectedIndex];
