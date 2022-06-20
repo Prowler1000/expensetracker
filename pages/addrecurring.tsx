@@ -197,7 +197,7 @@ function AddRecurring(props: AddRecurringProps) {
                     <Textbox
                         baseKey={`${baseKey}-date`} 
                         index={index}
-                        defaultValue={row.date.toDateString()} 
+                        defaultValue={row.date.toLocaleDateString()} 
                         onChangeCallback={(changeEvent, index) => 
                             {setRows(curVal => updateDate(curVal, index, changeEvent.target.value))}}
                     />
