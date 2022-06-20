@@ -3,3 +3,5 @@ A personal "website" to help keep track of expenses, intended to be hosted local
 Uses Prisma to access a database that stores expense data. Front-end uses [NextJS](https://nextjs.org/). Prisma requires an environment variable that stores appropriate database connection string.
 
 Code comments are currently non-existent. Once I *actually* get the first version ready for use, I intend on going through and making many comments.
+
+Currently set up to only use Postgres
