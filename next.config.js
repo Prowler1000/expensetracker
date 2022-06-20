@@ -8,4 +8,13 @@ module.exports = {
   experimental: {
     outputStandalone: true,
   },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/expenses',
+        permanent: false,
+      },
+    ]
+  },
 }
