@@ -6,7 +6,6 @@ import { SerializableRecurringExpense } from '../../lib/api-objects';
 
 export default async function handle(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
-        console.log(req.body);
         let body: SerializableRecurringExpense[] = req.body;
         let data = body.map(x => {
             const entry: Prisma.RecurringExpenseCreateManyInput = {
@@ -19,12 +18,10 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
             }
             return entry;
         })
-        console.log(data);
         const createMany = await prisma.recurringExpense.createMany({
             data: data,
             skipDuplicates: true,
         })
-        console.log(createMany);
     }
 
     res.status(200).json({});
