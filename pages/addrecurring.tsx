@@ -7,15 +7,18 @@ import Dropdown from '../components/dropdown';
 import Textbox from '../components/textbox';
 import { SerializableRecurringExpense } from '../lib/api-objects';
 
+// The contents of props that will be passed
 interface AddRecurringProps {
     typeMaps: TypeMap[],
 }
 
+// A list of each primary types relevant sub types
 interface TypeMap {
     primaryType: PrimaryType,
     subTypes: SubType[],
 }
 
+// Server side data fetching
 export async function getServerSideProps(context: any) {
     const dbPrimaryTypes = await prisma.primaryType.findMany({
         include: {
@@ -44,6 +47,7 @@ export async function getServerSideProps(context: any) {
     return {props: props};
 }
 
+// The frequency that a recurring expense should occur
 enum Frequency {
     DAILY,
     WEEKLY,
@@ -54,6 +58,7 @@ enum Frequency {
     ANNUALLY
 }
 
+// Relevant fields of each entry row
 interface RecurringRow {
     date: Date,
     primaryType: PrimaryType,
@@ -64,12 +69,14 @@ interface RecurringRow {
     tax_scheme: TaxScheme
 }
 
+// Enum for what taxes are applied for this recurring expense
 enum TaxScheme {
     BOTH,
     GST,
     PST,
     NONE
 }
+
 
 function AddRecurring(props: AddRecurringProps) {
     const initialRows = () => {
@@ -92,6 +99,7 @@ function AddRecurring(props: AddRecurringProps) {
     const [rows, setRows] = useState(initialRows);
     const [canRemove, setCanRemove] = useState(initialCanRemove)
 
+    // Add an entry row
     const addRow = () => {
         let copy = [...rows];
         let newRow: RecurringRow = {            
@@ -115,6 +123,7 @@ function AddRecurring(props: AddRecurringProps) {
         setRows(copy);
     }
 
+    // Take all data from rows and create it in the database
     function pushToDb() {
         if (rows.some(x => isNaN(x.date.valueOf()))) {
             console.error("INVALID DATE");
@@ -145,7 +154,7 @@ function AddRecurring(props: AddRecurringProps) {
             console.error(error);
         }
     }
-
+    // Functions to update the relevant parts of a row. Honestly a lot of these seem really inefficient.
     function updateDate(rows: RecurringRow[], index: number, date: string): RecurringRow[] {
         let rowsCopy = [...rows];
         rowsCopy[index].date = new Date(date);
@@ -187,9 +196,10 @@ function AddRecurring(props: AddRecurringProps) {
         return rowsCopy;
     }
 
+    // A React object that represents a row for entering data
     const InputRow = (index: number) => {
         const row = rows[index];
-        const baseKey = `recurring-row-${index}`;
+        const baseKey = `recurring-row-${index}`; // The base key of this row. Passed to components to ensure everything has a unique key
         const subTypes = props.typeMaps.find(x => x.primaryType.id === row.primaryType.id)?.subTypes.map(x => x.name)
         return (
             <div className={styles.rowContainer} key={baseKey}>

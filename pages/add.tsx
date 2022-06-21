@@ -5,6 +5,11 @@ import Textbox from '../components/textbox';
 import prisma from '../lib/prisma';
 import { PrimaryType, Prisma, SubType, SubtypesToPrimaryType } from 'prisma/prisma-client';
 
+/*
+    This page was created before I switched over to TypeScript so it's not quite "the same" as others
+*/
+
+// Server side data fetching. Maybe this is the superior location for these...
 export async function getServerSideProps(context: any) {
     const primaryTypes = await prisma.primaryType.findMany({
         include: {
@@ -25,6 +30,7 @@ export async function getServerSideProps(context: any) {
     return { props }
 }
 
+// The interface for props that will be passed
 interface AddProps {
     primaryTypes: (PrimaryType & {
         subTypes: SubtypesToPrimaryType[];
@@ -34,6 +40,7 @@ interface AddProps {
     })[]
 }
 
+// Interface for each row of data entry
 interface Row {
     date: Date,
     primaryType: PrimaryType,
@@ -44,6 +51,7 @@ interface Row {
     tax: TaxScheme
 }
 
+// Enum for taxes that apply to each purchase
 enum TaxScheme {
     BOTH,
     GST,
@@ -51,6 +59,7 @@ enum TaxScheme {
     NONE,
 }
 
+// Makes a row serializable to send with the API
 function rowToSerializable(row: Row): Prisma.SingleExpenseCreateInput {
     let rVal: Prisma.SingleExpenseCreateInput;
     rVal = {
@@ -95,7 +104,7 @@ function Add(props: AddProps) {
         return rows.length > 1;
     }
 
-    const [tableEntries, setTableEntries] = useState([]);
+    const [tableEntries, setTableEntries] = useState([]); // I don't know why I'm commenting this instead of removing it
     const [rows, setRows] = useState(setInitialRows);
     const [canRemove, setCanRemove] = useState(setInitialCanRemove);
 
@@ -111,6 +120,7 @@ function Add(props: AddProps) {
         if (rowsCopy.length < 2) setCanRemove(false);
     }
 
+    // Pushes data entered to database
     function pushToDb() {
         let bodyContent: Prisma.SingleExpenseCreateInput[] = [];
 
