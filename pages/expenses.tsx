@@ -285,6 +285,44 @@ function getNextOccurance(expense: RecurringExpense, lastOccurance: Date): Date 
     return nextOccurance;
 }
 
+/** Totals up passed array of single expenses */
+function totalSingleExpenses(expenses: SerializableSingleExpense[]): number {
+    let total = 0.0;
+    expenses.forEach(expense => 
+        total += (expense.cost * expense.taxRate)
+    );
+    return total;
+}
+/** Totals up passed array of recurring expenses */
+function totalRecurringExpenses(expenses: SerializableRecurringExpense[], fromDate: number): number {
+    let total = 0.0;
+    expenses.forEach(expense =>{
+        if (expense.lastOccuranceDate >= fromDate)
+            total += (expense.cost * expense.taxRate)
+    })
+    return total;
+}
+/** Adds total cost of each expense to appropriate type total */
+function typeTotalSingleExpenses(expenses: SerializableSingleExpense[], pTypes: PrimeTypeTotal[], sTypes?: SubTypeTotal[]) {
+    expenses.forEach(expense => {
+        let pTypeTotal = pTypes.find(x => x.type.id === expense.primaryTypeId);
+        let sTypeTotal = sTypes?.find(x => x.primaryType?.id === expense.primaryTypeId && x.subType.id === expense.subTypeId);
+        if (pTypeTotal) pTypeTotal.total += (expense.cost * expense.taxRate);
+        if (sTypeTotal) sTypeTotal.total += (expense.cost * expense.taxRate);
+    }) 
+}
+/** Adds total cost of each expense to appropriate type total */
+function typeTotalRecurringExpense(expenses: SerializableRecurringExpense[], fromDate: number, pTypes: PrimeTypeTotal[], sTypes?: SubTypeTotal[]) {
+    expenses.forEach(expense => {
+        if (expense.lastOccuranceDate >= fromDate){
+            let pTypeTotal = pTypes.find(x => x.type.id === expense.primaryTypeId);
+            let sTypeTotal = sTypes?.find(x => x.primaryType?.id === expense.primaryTypeId && x.subType.id === expense.subTypeId);
+            if (pTypeTotal) pTypeTotal.total += (expense.cost * expense.taxRate);
+            if (sTypeTotal) sTypeTotal.total += (expense.cost * expense.taxRate);
+        }
+    }) 
+}
+
 
 function Expenses(props: ExpensesProps) {
     const initialFromDate = () => {
@@ -322,26 +360,19 @@ function Expenses(props: ExpensesProps) {
     const [subTypes, setSubTypes] = useState(initialSubTypes);
     const [showSubCategories, setShowSubCategories] = useState(initialShowSubCategories);
 
-    let absoluteTotalNumber = 0.0; // Absolute total of all expenses combined
-    singleExpenses.forEach(expense => {
-        absoluteTotalNumber += (expense.cost * expense.taxRate)
-    });
-    recurringExpenses.forEach(expense => {
-        if (fromDate.getTime() <= expense.lastOccuranceDate){
-            absoluteTotalNumber += (expense.cost * expense.taxRate);
-        }
-    })
-    const absoluteTotal = absoluteTotalNumber.toFixed(2); // The string version of absoluteTotalNumber with 2 decimal places
-
-    let primaryCategorizedTotals: PrimeTypeTotal[] = [];
-    let subCategorizedTotals: SubTypeTotal[] = [];
-    primaryTypes.forEach((type, index) => {
-        primaryCategorizedTotals[index] = {
+    // Absolute total of all purchases
+    const absoluteTotal = (totalSingleExpenses(singleExpenses) 
+        + totalRecurringExpenses(recurringExpenses, fromDate.getTime())).toFixed(2);
+    
+    let primaryCategorizedTotals: PrimeTypeTotal[] = primaryTypes.map((type, index) => {
+        const pTypeTotal: PrimeTypeTotal = {
             type: type,
             total: 0.0
         }
-    })
-    subTypes.forEach((type, index) => {
+        return pTypeTotal;
+    });
+    let subCategorizedTotals: SubTypeTotal[] = []
+    subTypes.forEach(type => {
         type.primaryTypes.forEach((typeMap) => {
             const subTypeTotal: SubTypeTotal = {
                 primaryType: primaryTypes.find(x => x.id === typeMap.primaryTypeId),
@@ -351,22 +382,12 @@ function Expenses(props: ExpensesProps) {
             subCategorizedTotals.push(subTypeTotal)
         })
     })
-    singleExpenses.forEach((expense, index) => {
-        let pTypeTotal = primaryCategorizedTotals.find(x => x.type.id === expense.primaryTypeId);
-        let sTypeTotal = subCategorizedTotals.find(x => x.primaryType?.id === expense.primaryTypeId && x.subType.id === expense.subTypeId);
-        if (pTypeTotal) pTypeTotal.total += (expense.cost * expense.taxRate);
-        if (sTypeTotal) sTypeTotal.total += (expense.cost * expense.taxRate);
-    })
-    recurringExpenses.forEach((expense, index) => {
-        if (fromDate.getTime() <= expense.lastOccuranceDate){
-            let pTypeTotal = primaryCategorizedTotals.find(x => x.type.id === expense.primaryTypeId);
-            let sTypeTotal = subCategorizedTotals.find(x => x.primaryType?.id === expense.primaryTypeId && x.subType.id === expense.subTypeId);
-            if (pTypeTotal) pTypeTotal.total += (expense.cost * expense.taxRate);
-            if (sTypeTotal) sTypeTotal.total += (expense.cost * expense.taxRate);
-        }
-    })
 
-    /* 
+    // Add recent expenses into their appropriate category totals
+    typeTotalSingleExpenses(singleExpenses, primaryCategorizedTotals, subCategorizedTotals);
+    typeTotalRecurringExpense(recurringExpenses, fromDate.getTime(), primaryCategorizedTotals, subCategorizedTotals);
+
+    /**
         Toggles each sub category. Originally each sub cat was supposed to be positioned absolutely
         to allow for nice animations but that got complicated and I just never ended up doing it.
     */
@@ -387,7 +408,7 @@ function Expenses(props: ExpensesProps) {
         }
     }
 
-    // Creates relevant React object to show the total of a primary type with its relevant sub types
+    /** React object to show the total of a primary type with its relevant sub types */
     const PrimaryCategoryTotal = (primeType: PrimeTypeTotal, subTypes: SubTypeTotal[], index: number) => {
         let baseKey = `${primeType.type.id}-${index}`;
         //if (index > 0) return (<div></div>)
@@ -437,6 +458,9 @@ function Expenses(props: ExpensesProps) {
                             subCategorizedTotals.filter(x => x.primaryType?.id === primeType.type.id),
                             index)
                     })}
+                </div>
+                <div className={styles.listedExpenses}>
+
                 </div>
             </div>
         </div>
