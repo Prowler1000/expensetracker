@@ -60,6 +60,7 @@ interface SubTypeTotal {
     total: number
 }
 
+
 export async function getServerSideProps(context: any) {
     let monthPrior = new Date();
     monthPrior.setMonth(monthPrior.getMonth() - 1);
@@ -135,15 +136,11 @@ export async function getServerSideProps(context: any) {
             let curDayOfMonth = new Date().getDate();
             let daysInCurMonth = daysInMonth(new Date().getMonth());
             if (expenseDayOfMonth === curDayOfMonth) {
+                // Set last occurance to today
                 lastOccurance.setDate(curDayOfMonth);
             }
             else if (expenseDayOfMonth > curDayOfMonth && !(expenseDayOfMonth > daysInCurMonth)) {
-                lastOccurance.setDate(daysInCurMonth);
-            } 
-            else if (expenseDayOfMonth < curDayOfMonth) {
-                lastOccurance.setDate(expenseDayOfMonth);
-            }
-            else if (expenseDayOfMonth > daysInCurMonth) {
+                // Set last occurance to sometime last month
                 const prevMonth = new Date().getMonth() - 1;
                 const daysInPrevMonth = daysInMonth(prevMonth);
                 if (daysInPrevMonth < expenseDayOfMonth) {
@@ -152,6 +149,14 @@ export async function getServerSideProps(context: any) {
                 else {
                     lastOccurance.setMonth(prevMonth, expenseDayOfMonth);
                 }
+            } 
+            else if (expenseDayOfMonth < curDayOfMonth) {
+                // Set last occurance to a previous day this month
+                lastOccurance.setDate(expenseDayOfMonth);
+            }
+            else if (expenseDayOfMonth > daysInCurMonth && curDayOfMonth === daysInCurMonth) {
+                // Set last day of month
+                lastOccurance.setDate(daysInCurMonth);
             }
         } 
         else if (expense.frequency === RecurranceScheme.QUARTERLY) {
@@ -263,6 +268,11 @@ function Expenses(props: ExpensesProps) {
         }
         return tmpArray;
     }
+
+    props.recurringExpenses.forEach(x => {
+        const date = new Date(x.lastOccuranceDate).toDateString()
+        console.log(`${x.name} : ${date} (${new Date(x.dateStarted).toDateString()})`)
+    })
 
     const [fromDate, setFromDate] = useState(initialFromDate);
     const [singleExpenses, setSingleExpenses] = useState(initialSingleExpenses);
