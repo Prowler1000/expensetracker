@@ -7,17 +7,6 @@ import Dropdown from '../components/dropdown';
 import Textbox from '../components/textbox';
 import { SerializableRecurringExpense } from '../lib/api-objects';
 
-// The contents of props that will be passed
-interface AddRecurringProps {
-    typeMaps: TypeMap[],
-}
-
-// A list of each primary types relevant sub types
-interface TypeMap {
-    primaryType: PrimaryType,
-    subTypes: SubType[],
-}
-
 // Server side data fetching
 export async function getServerSideProps(context: any) {
     const dbPrimaryTypes = await prisma.primaryType.findMany({
@@ -47,6 +36,22 @@ export async function getServerSideProps(context: any) {
     return {props: props};
 }
 
+
+/*
+    <---INTERFACES--->
+*/
+
+// The contents of props that will be passed
+interface AddRecurringProps {
+    typeMaps: TypeMap[],
+}
+
+// A list of each primary types relevant sub types
+interface TypeMap {
+    primaryType: PrimaryType,
+    subTypes: SubType[],
+}
+
 // The frequency that a recurring expense should occur
 enum Frequency {
     DAILY,
@@ -69,6 +74,11 @@ interface RecurringRow {
     tax_scheme: TaxScheme
 }
 
+
+/*
+    <---ENUMS--->
+*/
+
 // Enum for what taxes are applied for this recurring expense
 enum TaxScheme {
     BOTH,
@@ -77,6 +87,10 @@ enum TaxScheme {
     NONE
 }
 
+
+/*
+    <---FUNCTIONS--->
+*/
 
 function AddRecurring(props: AddRecurringProps) {
     const initialRows = () => {
