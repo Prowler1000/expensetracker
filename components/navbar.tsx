@@ -9,7 +9,6 @@ function Navbar(props: any) {
                     <Link href="/expenses">Expenses</Link>
                     <Link href="/add">Add Single Expense</Link>
                     <Link href="/addrecurring">Add Recurring Expense</Link>
-                    <Link href="/testing">Testing Page</Link>
                 </div>
             </div>
         </div>
