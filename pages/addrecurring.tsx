@@ -7,15 +7,18 @@ import Dropdown from '../components/dropdown';
 import Textbox from '../components/textbox';
 import { SerializableRecurringExpense } from '../lib/api-objects';
 
+// The contents of props that will be passed
 interface AddRecurringProps {
     typeMaps: TypeMap[],
 }
 
+// A list of each primary types relevant sub types
 interface TypeMap {
     primaryType: PrimaryType,
     subTypes: SubType[],
 }
 
+// Server side data fetching
 export async function getServerSideProps(context: any) {
     const dbPrimaryTypes = await prisma.primaryType.findMany({
         include: {
@@ -44,6 +47,7 @@ export async function getServerSideProps(context: any) {
     return {props: props};
 }
 
+// The frequency that a recurring expense should occur
 enum Frequency {
     DAILY,
     WEEKLY,
@@ -54,14 +58,25 @@ enum Frequency {
     ANNUALLY
 }
 
+// Relevant fields of each entry row
 interface RecurringRow {
     date: Date,
     primaryType: PrimaryType,
     subType: SubType,
     name: string,
     cost: number,
-    frequency: Frequency
+    frequency: Frequency,
+    tax_scheme: TaxScheme
 }
+
+// Enum for what taxes are applied for this recurring expense
+enum TaxScheme {
+    BOTH,
+    GST,
+    PST,
+    NONE
+}
+
 
 function AddRecurring(props: AddRecurringProps) {
     const initialRows = () => {
@@ -71,7 +86,8 @@ function AddRecurring(props: AddRecurringProps) {
             subType: props.typeMaps[0].subTypes[0],
             name: '',
             cost: 0.0,
-            frequency: Frequency.MONTHLY
+            frequency: Frequency.MONTHLY,
+            tax_scheme: TaxScheme.BOTH,
         }
         
         return [firstRow,];
@@ -83,6 +99,7 @@ function AddRecurring(props: AddRecurringProps) {
     const [rows, setRows] = useState(initialRows);
     const [canRemove, setCanRemove] = useState(initialCanRemove)
 
+    // Add an entry row
     const addRow = () => {
         let copy = [...rows];
         let newRow: RecurringRow = {            
@@ -91,7 +108,8 @@ function AddRecurring(props: AddRecurringProps) {
             subType: props.typeMaps[0].subTypes[0],
             name: '',
             cost: 0.0,
-            frequency: Frequency.MONTHLY
+            frequency: Frequency.MONTHLY,
+            tax_scheme: TaxScheme.BOTH,
         }
         copy.push(newRow);
         if (!canRemove && copy.length > 1) setCanRemove(true);
@@ -105,6 +123,7 @@ function AddRecurring(props: AddRecurringProps) {
         setRows(copy);
     }
 
+    // Take all data from rows and create it in the database
     function pushToDb() {
         if (rows.some(x => isNaN(x.date.valueOf()))) {
             console.error("INVALID DATE");
@@ -119,7 +138,9 @@ function AddRecurring(props: AddRecurringProps) {
                 name: row.name,
                 cost: row.cost,
                 frequencyString: Frequency[row.frequency],
-                frequencyIndex: row.frequency
+                frequencyIndex: row.frequency,
+                has_gst: row.tax_scheme == TaxScheme.BOTH || row.tax_scheme == TaxScheme.GST,
+                has_pst: row.tax_scheme == TaxScheme.BOTH || row.tax_scheme == TaxScheme.PST,
             }
         })
 
@@ -133,7 +154,7 @@ function AddRecurring(props: AddRecurringProps) {
             console.error(error);
         }
     }
-
+    // Functions to update the relevant parts of a row. Honestly a lot of these seem really inefficient.
     function updateDate(rows: RecurringRow[], index: number, date: string): RecurringRow[] {
         let rowsCopy = [...rows];
         rowsCopy[index].date = new Date(date);
@@ -166,10 +187,19 @@ function AddRecurring(props: AddRecurringProps) {
         rowsCopy[index].frequency = Frequency[frequency as keyof typeof Frequency];
         return rowsCopy;
     }
+    function updateTax(rows: RecurringRow[], index: number, value: string): RecurringRow[] {
+        let rowsCopy = [...rows];
+        if (value === "GST & PST") rowsCopy[index].tax_scheme = TaxScheme.BOTH;
+        else if (value === "GST") rowsCopy[index].tax_scheme = TaxScheme.GST;
+        else if (value === "PST") rowsCopy[index].tax_scheme = TaxScheme.PST;
+        else rowsCopy[index].tax_scheme = TaxScheme.NONE;
+        return rowsCopy;
+    }
 
+    // A React object that represents a row for entering data
     const InputRow = (index: number) => {
         const row = rows[index];
-        const baseKey = `recurring-row-${index}`;
+        const baseKey = `recurring-row-${index}`; // The base key of this row. Passed to components to ensure everything has a unique key
         const subTypes = props.typeMaps.find(x => x.primaryType.id === row.primaryType.id)?.subTypes.map(x => x.name)
         return (
             <div className={styles.rowContainer} key={baseKey}>
@@ -177,7 +207,7 @@ function AddRecurring(props: AddRecurringProps) {
                     <Textbox
                         baseKey={`${baseKey}-date`} 
                         index={index}
-                        defaultValue={row.date.toDateString()} 
+                        defaultValue={row.date.toLocaleDateString()} 
                         onChangeCallback={(changeEvent, index) => 
                             {setRows(curVal => updateDate(curVal, index, changeEvent.target.value))}}
                     />
@@ -225,13 +255,24 @@ function AddRecurring(props: AddRecurringProps) {
 
                 <div className={`${styles.rowObject} ${styles.rowFrequencyInput}`} key={`${baseKey}-frequency-container`}>
                     <Dropdown
-                            baseKey={`${baseKey}-subVal`}
+                            baseKey={`${baseKey}-frequency`}
                             index={index}
                             values={Object.keys(Frequency).filter((item) => isNaN(Number(item)))}
                             defaultIndex={row.frequency}
                             sort={false}
                             callback={(selectedValue, _, indexSource) =>
                                 setRows(curVal => updateFrequency(curVal, indexSource, selectedValue))}
+                    />
+                </div>
+
+                <div className={`${styles.rowObject} ${styles.rowTaxScheme}`} key={`${baseKey}-tax-container`}>
+                    <Dropdown
+                            baseKey={`${baseKey}-taxScheme`}
+                            index={index}
+                            values={["GST & PST", "GST", "PST", "NONE"]}
+                            sort={false}
+                            callback={(selectedValue, _, indexSource) =>
+                                setRows(curVal => updateTax(curVal, indexSource, selectedValue))}
                     />
                 </div>
             </div>

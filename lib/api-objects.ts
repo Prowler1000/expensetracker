@@ -8,4 +8,6 @@ export interface SerializableRecurringExpense {
     cost: number,
     frequencyIndex: number,
     frequencyString: string,
+    has_gst: boolean,
+    has_pst: boolean,
 }

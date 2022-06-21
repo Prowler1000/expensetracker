@@ -12,7 +12,12 @@
     flex-direction: row;
     width: 100%;
     padding: 1%;
+    border-bottom: 5px solid #1C6EA4;
 }
+.rowContainer:first-of-type {
+    border-top: 5px solid #1C6EA4;
+}
+
 .rowObject {
     margin: auto;
     padding-left: 1%;
@@ -30,6 +35,10 @@
 
 .rowSubType {
 
+}
+
+.rowTaxScheme {
+    width: 5%;
 }
 
 .footer_spacer{

@@ -4,6 +4,9 @@ import { PrimaryType, RecurringExpense, SingleExpense, SubType, Tax, SubtypesToP
 import { useState } from 'react';
 import { style } from '@mui/system';
 
+/*
+    The props passed from server-side rendering
+*/
 interface ExpensesProps {
     earliestDate: number
     singleExpenses: SerializableSingleExpense[],
@@ -15,6 +18,10 @@ interface ExpensesProps {
     })[]
 }
 
+/*
+    Contains all data, plus some extras, of a Prisma SingleExpense
+    object in a json serializable format
+*/
 interface SerializableSingleExpense {
     id: number,
     date: number,
@@ -27,6 +34,11 @@ interface SerializableSingleExpense {
     subTypeId: number,
     taxRate: number,
 }
+
+/*
+    Contains all data, plus some extras, of a Prisma RecurringExpense
+    object in a json serializable format
+*/
 interface SerializableRecurringExpense {
     id: number,
     dateStarted: number,
@@ -42,6 +54,11 @@ interface SerializableRecurringExpense {
     subTypeId: number,
     taxRate: number,
 }
+
+/*
+    Contains all data, plus some extras, of a Prisma Tax
+    object in a json serializable format
+*/
 interface SerializableTax {
     id: number,
     date: number,
@@ -49,21 +66,32 @@ interface SerializableTax {
     gst: number
 }
 
+/*
+    For adding totals of primary types
+*/
 interface PrimeTypeTotal {
     type: PrimaryType,
     total: number
 }
 
+/*
+    For adding totals of sub types with the ability
+    to add relevant primary type
+*/
 interface SubTypeTotal {
     primaryType?: PrimaryType,
     subType: SubType,
     total: number
 }
 
+/*
+    Server side data fetching
+*/
 export async function getServerSideProps(context: any) {
-    let monthPrior = new Date();
+    let monthPrior = new Date(); // Will store the date of 1 month ago
     monthPrior.setMonth(monthPrior.getMonth() - 1);
 
+    // Fetches single expenses that occured on or after monthPrior
     let dbSingleExpenses = await prisma.singleExpense.findMany({
         where: {
             date: {
@@ -71,7 +99,7 @@ export async function getServerSideProps(context: any) {
             }
         }
     });
-    let dbRecurringExpenses = await prisma.recurringExpense.findMany();
+    let dbRecurringExpenses = await prisma.recurringExpense.findMany(); // Fetches all recurring expenses
     let dbTaxes = await prisma.tax.findMany();
     let dbPrimaryTypes = await prisma.primaryType.findMany();
     let dbSubTypes = await prisma.subType.findMany({
@@ -80,6 +108,7 @@ export async function getServerSideProps(context: any) {
         }
     });
 
+    // Calculates tax rate (as 1.x) for a SingleExpense. Returns 1.0 if no taxes applied
     function calcTaxRate( expense: SingleExpense): number {
         let rate = 1.0;
         if (dbTaxes.length > 0) {
@@ -94,6 +123,7 @@ export async function getServerSideProps(context: any) {
         return rate;
     }
     
+    // Calculates tax rate (as 1.x) for a RecurringExpense. Returns 1.0 if no taxes applied
     function calcRecurringTaxRate(expense: RecurringExpense, lastOccurance: Date): number {
         let rate = 1.0
         if (dbTaxes.length > 0) {
@@ -108,14 +138,16 @@ export async function getServerSideProps(context: any) {
         return rate;
     }
 
+    // Gets the number of days in the month given. I honestly don't know how this works
     function daysInMonth(month: number) {
         if (month < 0) month = 11;
         var now = new Date();
         return new Date(now.getFullYear(), month+1, 0).getDate();
     }
 
+    // Gets the last time a RecurringExpense occured. As of writing, function is incomplete
     function getLastOccurance(expense: RecurringExpense): Date {
-        let lastOccurance = new Date();
+        let lastOccurance = new Date(); // Object to store when the last occurance was
         if (expense.frequency === RecurranceScheme.DAILY) {
             // Shouldn't do anything, it happens every day
         } 
@@ -135,15 +167,11 @@ export async function getServerSideProps(context: any) {
             let curDayOfMonth = new Date().getDate();
             let daysInCurMonth = daysInMonth(new Date().getMonth());
             if (expenseDayOfMonth === curDayOfMonth) {
+                // Set last occurance to today
                 lastOccurance.setDate(curDayOfMonth);
             }
             else if (expenseDayOfMonth > curDayOfMonth && !(expenseDayOfMonth > daysInCurMonth)) {
-                lastOccurance.setDate(daysInCurMonth);
-            } 
-            else if (expenseDayOfMonth < curDayOfMonth) {
-                lastOccurance.setDate(expenseDayOfMonth);
-            }
-            else if (expenseDayOfMonth > daysInCurMonth) {
+                // Set last occurance to sometime last month
                 const prevMonth = new Date().getMonth() - 1;
                 const daysInPrevMonth = daysInMonth(prevMonth);
                 if (daysInPrevMonth < expenseDayOfMonth) {
@@ -152,6 +180,14 @@ export async function getServerSideProps(context: any) {
                 else {
                     lastOccurance.setMonth(prevMonth, expenseDayOfMonth);
                 }
+            } 
+            else if (expenseDayOfMonth < curDayOfMonth) {
+                // Set last occurance to a previous day this month
+                lastOccurance.setDate(expenseDayOfMonth);
+            }
+            else if (expenseDayOfMonth > daysInCurMonth && curDayOfMonth === daysInCurMonth) {
+                // Set last day of month
+                lastOccurance.setDate(daysInCurMonth);
             }
         } 
         else if (expense.frequency === RecurranceScheme.QUARTERLY) {
@@ -163,9 +199,10 @@ export async function getServerSideProps(context: any) {
         else if (expense.frequency === RecurranceScheme.ANNUALLY) {
 
         }
-        return new Date(lastOccurance.toDateString());
+        return new Date(lastOccurance.toDateString()); // Retuns last occurance, stripping time element
     }
 
+    // Gets the next time a RecurringExpense should occur
     function getNextOccurance(expense: RecurringExpense, lastOccurance: Date): Date {
         ///!!! CHANGE TO SWITCH/CASE! THIS IS IMPOSSIBLE TO READ
         let nextOccurance = new Date(lastOccurance.toDateString());
@@ -187,6 +224,7 @@ export async function getServerSideProps(context: any) {
         return nextOccurance;
     }
 
+    // The actual props to be passed to render
     const props: ExpensesProps = {
         earliestDate: monthPrior.getTime(),
         singleExpenses: dbSingleExpenses.map(x => {
@@ -237,6 +275,7 @@ export async function getServerSideProps(context: any) {
     return {props};
 }
 
+
 function Expenses(props: ExpensesProps) {
     const initialFromDate = () => {
         return new Date(props.earliestDate);
@@ -264,6 +303,7 @@ function Expenses(props: ExpensesProps) {
         return tmpArray;
     }
 
+    // States used for rendering and computations.
     const [fromDate, setFromDate] = useState(initialFromDate);
     const [singleExpenses, setSingleExpenses] = useState(initialSingleExpenses);
     const [recurringExpenses, setRecurringExpenses] = useState(initialRecurringExpenses);
@@ -272,7 +312,7 @@ function Expenses(props: ExpensesProps) {
     const [subTypes, setSubTypes] = useState(initialSubTypes);
     const [showSubCategories, setShowSubCategories] = useState(initialShowSubCategories);
 
-    let absoluteTotalNumber = 0.0;
+    let absoluteTotalNumber = 0.0; // Absolute total of all expenses combined
     singleExpenses.forEach(expense => {
         absoluteTotalNumber += (expense.cost * expense.taxRate)
     });
@@ -281,7 +321,7 @@ function Expenses(props: ExpensesProps) {
             absoluteTotalNumber += (expense.cost * expense.taxRate);
         }
     })
-    const absoluteTotal= absoluteTotalNumber.toFixed(2);
+    const absoluteTotal = absoluteTotalNumber.toFixed(2); // The string version of absoluteTotalNumber with 2 decimal places
 
     let primaryCategorizedTotals: PrimeTypeTotal[] = [];
     let subCategorizedTotals: SubTypeTotal[] = [];
@@ -316,6 +356,10 @@ function Expenses(props: ExpensesProps) {
         }
     })
 
+    /* 
+        Toggles each sub category. Originally each sub cat was supposed to be positioned absolutely
+        to allow for nice animations but that got complicated and I just never ended up doing it.
+    */
     function toggleShowSubCategories(event: React.MouseEvent<HTMLDivElement, MouseEvent>, index: number) {
         let showSubCategoriesCopy = [...showSubCategories];
         showSubCategoriesCopy[index] = !showSubCategoriesCopy[index];
@@ -333,6 +377,7 @@ function Expenses(props: ExpensesProps) {
         }
     }
 
+    // Creates relevant React object to show the total of a primary type with its relevant sub types
     const PrimaryCategoryTotal = (primeType: PrimeTypeTotal, subTypes: SubTypeTotal[], index: number) => {
         let baseKey = `${primeType.type.id}-${index}`;
         //if (index > 0) return (<div></div>)
@@ -368,6 +413,7 @@ function Expenses(props: ExpensesProps) {
         )
     }
 
+    
     return (
         <div className={styles.container}>
             <div className={styles.overview}>
