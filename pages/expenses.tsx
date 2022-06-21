@@ -84,7 +84,7 @@ export async function getServerSideProps(context: any) {
     <---INTERFACES--->
 */
 
-/*
+/**
     The props passed from server-side rendering
 */
 interface ExpensesProps {
@@ -98,7 +98,7 @@ interface ExpensesProps {
     })[]
 }
 
-/*
+/**
     Contains all data, plus some extras, of a Prisma SingleExpense
     object in a json serializable format
 */
@@ -115,7 +115,7 @@ interface SerializableSingleExpense {
     taxRate: number,
 }
 
-/*
+/**
     Contains all data, plus some extras, of a Prisma RecurringExpense
     object in a json serializable format
 */
@@ -135,7 +135,7 @@ interface SerializableRecurringExpense {
     taxRate: number,
 }
 
-/*
+/**
     Contains all data, plus some extras, of a Prisma Tax
     object in a json serializable format
 */
@@ -146,7 +146,7 @@ interface SerializableTax {
     gst: number
 }
 
-/*
+/**
     For adding totals of primary types
 */
 interface PrimeTypeTotal {
@@ -154,7 +154,7 @@ interface PrimeTypeTotal {
     total: number
 }
 
-/*
+/**
     For adding totals of sub types with the ability
     to add relevant primary type
 */
@@ -169,7 +169,7 @@ interface SubTypeTotal {
     <---FUNCTIONS--->
 */
 
-// Calculates tax rate (as 1.x) for a SingleExpense. Returns 1.0 if no taxes applied
+/** Calculates tax rate (as 1.x) for a SingleExpense. Returns 1.0 if no taxes applied */
 function calcTaxRate( expense: SingleExpense, dbTaxes: Tax[]): number {
     let rate = 1.0;
     if (dbTaxes.length > 0) {
@@ -184,7 +184,7 @@ function calcTaxRate( expense: SingleExpense, dbTaxes: Tax[]): number {
     return rate;
 }
 
-// Calculates tax rate (as 1.x) for a RecurringExpense. Returns 1.0 if no taxes applied
+/** Calculates tax rate (as 1.x) for a RecurringExpense. Returns 1.0 if no taxes applied */
 function calcRecurringTaxRate(expense: RecurringExpense, lastOccurance: Date, dbTaxes: Tax[]): number {
     let rate = 1.0
     if (dbTaxes.length > 0) {
@@ -199,14 +199,14 @@ function calcRecurringTaxRate(expense: RecurringExpense, lastOccurance: Date, db
     return rate;
 }
 
-// Gets the number of days in the month given. I honestly don't know how this works
+/** Gets the number of days in the month given. I honestly don't know how this works */
 function daysInMonth(month: number) {
     if (month < 0) month = 11;
     var now = new Date();
     return new Date(now.getFullYear(), month+1, 0).getDate();
 }
 
-// Gets the last time a RecurringExpense occured. As of writing, function is incomplete
+/** Gets the last time a RecurringExpense occured. As of writing, function is incomplete */
 function getLastOccurance(expense: RecurringExpense): Date {
     let lastOccurance = new Date(); // Object to store when the last occurance was
     if (expense.frequency === RecurranceScheme.DAILY) {
@@ -263,7 +263,7 @@ function getLastOccurance(expense: RecurringExpense): Date {
     return new Date(lastOccurance.toDateString()); // Retuns last occurance, stripping time element
 }
 
-// Gets the next time a RecurringExpense should occur
+/** Gets the next time a RecurringExpense should occur */
 function getNextOccurance(expense: RecurringExpense, lastOccurance: Date): Date {
     ///!!! CHANGE TO SWITCH/CASE! THIS IS IMPOSSIBLE TO READ
     let nextOccurance = new Date(lastOccurance.toDateString());
