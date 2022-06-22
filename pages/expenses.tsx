@@ -1,7 +1,7 @@
 import styles from '../styles/expenses.module.css';
 import prisma from '../lib/prisma';
 import { PrimaryType, RecurringExpense, SingleExpense, SubType, Tax, SubtypesToPrimaryType, Prisma, RecurranceScheme} from 'prisma/prisma-client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { style } from '@mui/system';
 
 /*
@@ -350,6 +350,10 @@ function Expenses(props: ExpensesProps) {
         }
         return tmpArray;
     }
+    const initialInvidualExpenses = () => {
+        const tmp: JSX.Element[] = [];
+        return tmp;
+    }
 
     // States used for rendering and computations.
     const [fromDate, setFromDate] = useState(initialFromDate);
@@ -359,6 +363,24 @@ function Expenses(props: ExpensesProps) {
     const [primaryTypes, setPrimaryTypes] = useState(initialPrimaryTypes);
     const [subTypes, setSubTypes] = useState(initialSubTypes);
     const [showSubCategories, setShowSubCategories] = useState(initialShowSubCategories);
+    const [indivialExpenses, setIndividualExpenses] = useState(initialInvidualExpenses);
+
+    useEffect(() => {
+        function generateIndividualExpenses() {
+            let array: JSX.Element[] = [];
+            let counter = 0;
+            singleExpenses.forEach(x => {
+                array.push(IndividualExpense(x, counter))
+                counter++;
+            })
+            recurringExpenses.forEach(x => {
+                array.push(IndividualExpense(x, counter));
+                counter++;
+            })
+            return array;
+        }
+        setIndividualExpenses(generateIndividualExpenses())
+    })
 
     // Absolute total of all purchases
     const absoluteTotal = (totalSingleExpenses(singleExpenses) 
@@ -444,6 +466,22 @@ function Expenses(props: ExpensesProps) {
         )
     }
 
+    const IndividualExpense = (expense: SerializableSingleExpense | SerializableRecurringExpense, index: number) => {
+        let date = 'dateStarted' in expense ? expense.lastOccuranceDate : expense.date;
+        let name = expense.name;
+        let primeType = primaryTypes.find(x => x.id === expense.primaryTypeId);
+        let subType = subTypes.find(x => x.id === expense.subTypeId);
+        let cost = expense.cost;
+        let tax = (expense.cost * (expense.taxRate - 1)).toFixed(2);
+        let total = (expense.cost * expense.taxRate).toFixed(2);
+
+        const baseKey = `individualExpense-${index}`;
+        return (
+            <div className={styles.indivExpenseContainer} key={baseKey}>
+                {cost}
+            </div>
+        )
+    }
     
     return (
         <div className={styles.container}>
@@ -460,7 +498,7 @@ function Expenses(props: ExpensesProps) {
                     })}
                 </div>
                 <div className={styles.listedExpenses}>
-
+                    {indivialExpenses}
                 </div>
             </div>
         </div>
