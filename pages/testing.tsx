@@ -1,32 +1,69 @@
-import { PrimaryType, SingleExpense, SubType, Tax } from 'prisma/prisma-client'
+import { PrimaryType, SingleExpense, SubType, SubtypesToPrimaryType, Tax } from 'prisma/prisma-client'
 import styles from '../styles/testing.module.css'
 import prisma from '../lib/prisma';
 import Dropdown from '../components/dropdown';
 import Textbox from '../components/textbox';
+import ExpenseInputRow from '../components/expenseinputrow';
+import { ExpenseRow, Frequency, PrimaryTypeMap, useExpenseRow } from '../lib/expense-row';
+import { StripUndefined } from '../lib/dry';
+import { cloneElement, useState } from 'react';
+
+interface TestingProps {
+    primaryTypes: (PrimaryType & {
+        subTypes: SubtypesToPrimaryType[];
+    })[],
+    subTypes: SubType[]
+}
 
 export async function getServerSideProps(context: any) {
-    const purchases: SingleExpense[] = await prisma.singleExpense.findMany()
-    const taxes: Tax[] = await prisma.tax.findMany()
-    const primaryTypes: PrimaryType[] = await prisma.primaryType.findMany()
+    const primaryTypes = await prisma.primaryType.findMany({
+        include: {
+            subTypes: true,
+        }
+    })
     const subTypes: SubType[] = await prisma.subType.findMany()
     return { 
-        props: { 
-            purchases: purchases,
-            taxes: taxes,
+        props: {
             primaryTypes: primaryTypes,
             subTypes: subTypes,
         }
     }
 }
 
-export default function Testing() {
-    let someRef;
-    const test = <Dropdown values={["Value 1", "Value 2", "Value 3", "Value 4"]} baseKey="0"></Dropdown>
-    console.log(styles.container);
+export default function Testing(props: TestingProps) {
+    const initialExpenseRow = () => {
+        let subType = StripUndefined(props.subTypes.find(x => x.id === props.primaryTypes[0].subTypes[0].subTypeId));
+        let row: ExpenseRow = {
+            date: new Date(),
+            primaryType: props.primaryTypes[0],
+            subType: subType,
+            isRecurring: true,
+            name: '',
+            cost: 0,
+            frequency: Frequency.MONTHLY,
+            has_gst: true,
+            has_pst: true
+        }
+
+        return row;
+    }
+    const [row, setRow] = useExpenseRow(initialExpenseRow)
+    const typeMaps: PrimaryTypeMap[] = props.primaryTypes.map(x => {
+        const map: PrimaryTypeMap = {
+            primaryType: x as PrimaryType,
+            subTypes: props.subTypes
+                .filter(subType => 
+                    x.subTypes.some(stpt => 
+                        stpt.primaryTypeId === x.id && stpt.subTypeId === subType.id))   
+        }
+        return map;
+    })
+
+    console.log(row)
+
     return(
         <div className={styles.container}>
-            <div>Space taker!</div>
-            <Textbox type="number"></Textbox>
+            <ExpenseInputRow isRecurring={row.isRecurring} rowState={row} setRowState={setRow} types={typeMaps} baseKey={'expense-test'}></ExpenseInputRow>
         </div>
     )
 }
