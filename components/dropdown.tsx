@@ -1,5 +1,5 @@
 import styles from './styles/dropdown.module.css'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 interface DropdownProps {
     values: string[],
@@ -56,8 +56,9 @@ export default function Dropdown(props: DropdownProps){
         if (props.values.length > 0 && !sortedValues.every(x => props.values.includes(x.value))){
             setSortedValues(initialSortValues);
             setSelectedIndex(initialSelectedIndex);
+            runCallback(initialSelectedIndex());
         }
-    })
+    }, [props.values])
 
     const updateShow = (curVal: boolean) => {
         return !curVal;

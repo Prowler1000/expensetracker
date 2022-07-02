@@ -62,8 +62,8 @@ function Textbox(props: TextboxProps) {
     }
 
     return (
-        <div className={`${styles.container} ${props.className}`}>
-            <input className={styles.input} onChange={handleChange} value={value}></input>
+        <div className={`${styles.container}`}>
+            <input className={`${styles.input} ${props.className}`} onChange={handleChange} value={value}></input>
             { showPopup ?
                 <AlertPopup top={popupLocation.top} left={popupLocation.left} alertText="Please only enter a valid number or '.'"
                     timeout={{time: 7, callback: unrenderAlertBox}}></AlertPopup> :
