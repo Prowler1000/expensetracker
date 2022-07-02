@@ -3,7 +3,6 @@
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    border-top: 5px solid #1C6EA4;
 }
 
 .entries{

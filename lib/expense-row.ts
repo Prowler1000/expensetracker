@@ -21,7 +21,8 @@ export interface ExpenseRow {
     quantity?: number,
     frequency?: Frequency,
     has_gst: boolean,
-    has_pst: boolean
+    has_pst: boolean,
+    id?: number
 }
 
 export interface PrimaryTypeMap {

@@ -6,7 +6,6 @@ export interface SerializableRecurringExpense {
     subType: SubType,
     name: string,
     cost: number,
-    frequencyIndex: number,
     frequencyString: string,
     has_gst: boolean,
     has_pst: boolean,

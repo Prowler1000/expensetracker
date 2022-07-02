@@ -1,9 +1,12 @@
 import styles from '../styles/add.module.css'
-import {useState, useEffect, ChangeEvent} from 'react'
+import {useState, useEffect, ChangeEvent, useCallback} from 'react'
 import Dropdown from '../components/dropdown';
 import Textbox from '../components/textbox';
 import prisma from '../lib/prisma';
 import { PrimaryType, Prisma, SubType, SubtypesToPrimaryType } from 'prisma/prisma-client';
+import { IsDefined, StripUndefined } from '../lib/dry';
+import { ExpenseRow, Frequency, PrimaryTypeMap } from '../lib/expense-row';
+import ExpenseInputRow from '../components/expenseinputrow';
 
 /*
     This page was created before I switched over to TypeScript so it's not quite "the same" as others
@@ -60,7 +63,7 @@ enum TaxScheme {
 }
 
 // Makes a row serializable to send with the API
-function rowToSerializable(row: Row): Prisma.SingleExpenseCreateInput {
+function rowToSerializable(row: ExpenseRow): Prisma.SingleExpenseCreateInput {
     let rVal: Prisma.SingleExpenseCreateInput;
     rVal = {
         date: new Date(row.date).toISOString(),
@@ -77,44 +80,68 @@ function rowToSerializable(row: Row): Prisma.SingleExpenseCreateInput {
         name: row.name,
         cost: row.cost,
         quantity: row.quantity,
-        has_gst: (row.tax === TaxScheme.BOTH || row.tax === TaxScheme.GST),
-        has_pst: (row.tax === TaxScheme.BOTH || row.tax === TaxScheme.PST)
+        has_gst: row.has_gst,
+        has_pst: row.has_pst
     }
     return rVal;
 }
 
+const defaultExpenseRow = (props: AddProps) => {
+    let subType = StripUndefined(props.subTypes.find(x => x.id === props.primaryTypes[0].subTypes[0].subTypeId));
+    let row: ExpenseRow = {
+        date: new Date(),
+        primaryType: props.primaryTypes[0],
+        subType: subType,
+        isRecurring: false,
+        name: '',
+        cost: 0,
+        frequency: Frequency.MONTHLY,
+        has_gst: true,
+        has_pst: true
+    }
+
+    return row;
+}
+
 function Add(props: AddProps) {
-    const setInitialRows = () => {
-        const rowDefault: Row = {
-            date: new Date(),
-            primaryType: props.primaryTypes[0],
-            subType: {
-                id: 0,
-                name: ''
-            },
-            name: '',
-            cost: 0,
-            quantity: 1,
-            tax: TaxScheme.BOTH
-        }
-        return [rowDefault,]
-    }
+    const setInitialRows = useCallback(
+        () => {
+            let firstRow = defaultExpenseRow(props);
+            firstRow.id = 0;
+            return [firstRow,]
+        },
+        [props]
+    )
 
-    const setInitialCanRemove = () => {
-        return rows.length > 1;
-    }
+    const setInitialCanRemove = useCallback(
+        () => {
+            return false
+        },
+        [props]
+    )
 
-    const [tableEntries, setTableEntries] = useState([]); // I don't know why I'm commenting this instead of removing it
-    const [rows, setRows] = useState(setInitialRows);
     const [canRemove, setCanRemove] = useState(setInitialCanRemove);
+    const [rows, setRows] = useState(setInitialRows);
+
+    const updateRow = (updatedRow: ExpenseRow) => {
+        if (IsDefined(updatedRow) && IsDefined(updatedRow.id)) {
+            let rowCopy = structuredClone(rows);
+            rowCopy[updatedRow.id] = updatedRow
+            setRows(rowCopy)
+        }
+    }
 
     function addRow() {
-        setRows([...rows, setInitialRows()[0]])
-        if (rows.length > 0) setCanRemove(true);
+        let newRow = defaultExpenseRow(props);
+        newRow.id = rows.length;
+        let copy = structuredClone(rows)
+        setRows([...copy, newRow]);
+        if (rows.length >= 1) setCanRemove(true);
     }
 
     function removeRow() {
-        let rowsCopy = [...rows];
+        if (!canRemove) return;
+        let rowsCopy = structuredClone(rows);
         rowsCopy.pop();
         setRows(rowsCopy);
         if (rowsCopy.length < 2) setCanRemove(false);
@@ -138,103 +165,27 @@ function Add(props: AddProps) {
             console.error(error);
         }
     }
-
-    function handleDateChange(value: string, index: number): void {
-        throw new Error('Function not implemented.');
-    }
     
-    function updatePrimaryType(selectedValue: string, selectedIndex: number, indexSource: number): void {
-        const primaryType = props.primaryTypes[selectedIndex];
-        let rowsCopy = [...rows];
-        rowsCopy[indexSource].primaryType = primaryType;
-        setRows(rowsCopy);
-    }
-
-    function updateSubType(selectedValue: string, selectedIndex: number, indexSource: number): void {
-        const subType = props.subTypes.find(st => st.name === selectedValue);
-        if (subType) {            
-            let rowsCopy = [...rows];
-            rowsCopy[indexSource].subType = subType;
+    const typeMaps: PrimaryTypeMap[] = props.primaryTypes.map(x => {
+        const map: PrimaryTypeMap = {
+            primaryType: x as PrimaryType,
+            subTypes: props.subTypes
+                .filter(subType => 
+                    x.subTypes.some(stpt => 
+                        stpt.primaryTypeId === x.id && stpt.subTypeId === subType.id))   
         }
-    }
-
-    function updateProductName(event: ChangeEvent<HTMLInputElement>, index?: number) {
-        if (typeof index !== 'undefined') {
-            let rowsCopy = [...rows];
-            rowsCopy[index].name = event.target.value;
-            setRows(rowsCopy);
-        }
-    }
-
-    function updateProductPrice(event: ChangeEvent<HTMLInputElement>, index?: number) {
-        if (typeof index !== 'undefined') {
-            let rowsCopy = [...rows];
-            rowsCopy[index].cost = parseFloat(event.target.value);
-            setRows(rowsCopy);
-        }
-    }
-
-    function updateTaxScheme(selectedValue: string, selectedIndex: number, indexSource: number): void {
-        let rowsCopy = [...rows];
-        let tax = TaxScheme.BOTH;
-        if (selectedValue === "GST") tax = TaxScheme.GST;
-        else if (selectedValue === "PST") tax = TaxScheme.PST;
-        else if (selectedValue === "None") tax = TaxScheme.NONE;
-        rowsCopy[indexSource].tax = tax;
-        setRows(rowsCopy); 
-    }
-
-
-    const TableRow = (index: number, row: Row) => {
-        const subTypeList = props.subTypes.filter(st => st.primaryTypes.some(pt => pt.primaryTypeId === row.primaryType.id)).map(x => x.name)
-        return (
-            <div className={styles.row} key={`row-${index}`}>
-
-                <div className={`${styles.paramContainer} ${styles.dateContainer}`} key={`row-date-${index}`}>
-                    <div className={styles.paramTitle}>Date:</div>
-                    <input type="text" className={styles.paramInput} onChange={e => handleDateChange(e.target.value, index)} 
-                        value={new Date().toLocaleDateString()} id={`${index}-date`}></input>
-                </div>
-
-                <div className={`${styles.paramContainer} ${styles.typeContainer}`} key={`row-primaryType-${index}`}>
-                    <div className={styles.paramTitle}>Primary Type:</div>
-                    <Dropdown defaultIndex={0} values={props.primaryTypes.map(x => x.name)} callback={updatePrimaryType} index={index} baseKey={`primaryTypes-${index}`}/>
-                </div>
-
-                <div className={`${styles.paramContainer} ${styles.typeContainer}`} key={`row-subtype-${index}`}>
-                    <div className={styles.paramTitle}>Sub Type:</div>
-                    <Dropdown defaultIndex={0} baseKey={`subTypes-${index}`} index={index} values={subTypeList} callback={updateSubType}/>
-                </div>
-
-                <div className={`${styles.paramContainer} ${styles.nameContainer}`} key={`row-name-${index}`}>
-                    <div className={styles.paramTitle}>Product Name:</div>
-                    <Textbox type="text" className={styles.paramInput} id={`${index}-name`} index={index} onChangeCallback={updateProductName}></Textbox>
-                </div>
-
-                <div className={`${styles.paramContainer} ${styles.priceContainer}`} key={`row-price-${index}`}>
-                    <div className={styles.paramTitle}>Product Price:</div>
-                    <Textbox onChangeCallback={updateProductPrice} type="number" className={styles.paramInput} index={index}></Textbox>
-                </div>
-
-                <div className={`${styles.paramContainer} ${styles.quantity}`}>
-                    <div className={styles.paramTitle}>Quantity:</div>
-                    <input type="number" id={`quantity-${index}`} className={styles.paramInput}></input>
-                </div>
-
-                <div className={`${styles.paramContainer} ${styles.taxContainer}`} key={`row-tax-${index}`}>
-                    <div className={styles.paramTitle}>Product Tax Scheme</div>
-                    <Dropdown defaultIndex={0} values={["GST & PST", "GST", "PST", "None"]} callback={updateTaxScheme} index={index} 
-                        baseKey={`taxScheme-${index}`} className={styles.taxDropdown}/>
-                </div>
-
-            </div>
-        )
-    }
+        return map;
+    })
 
     return (
         <div className={styles.container}>
             <div className={styles.entries} id="entries">
-                {rows.map((row, index) => TableRow(index, row))}
+                {rows.map((val, index) => {
+                    return ( 
+                        <ExpenseInputRow isRecurring={false} rowState={val} setRowState={updateRow}
+                            types={typeMaps} baseKey={`row-input-${index}`} key={index}/>
+                    )
+                })}
             </div>
             <div className={styles.footer_spacer} id="footer_spacer"></div>
             <div className={styles.footer} id="footer">
