@@ -380,7 +380,7 @@ function Expenses(props: ExpensesProps) {
             return array;
         }
         setIndividualExpenses(generateIndividualExpenses())
-    })
+    }, [props])
 
     // Absolute total of all purchases
     const absoluteTotal = (totalSingleExpenses(singleExpenses) 
