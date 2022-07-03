@@ -150,7 +150,7 @@ export default function Add(props: AddProps) {
                 {rows.map((val, index) => {
                     return (
                         <ExpenseInputRow rowState={val} setRowState={updateRow}
-                            types={typeMaps} baseKey={`row-input-${index}`}/>
+                            types={typeMaps} baseKey={`row-input-${index}`} key={`row-input-${index}-exterior`}/>
                     )
                 })}
             </div>
