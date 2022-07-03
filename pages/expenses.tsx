@@ -498,7 +498,6 @@ function Expenses(props: ExpensesProps) {
                     })}
                 </div>
                 <div className={styles.listedExpenses}>
-                    {indivialExpenses}
                 </div>
             </div>
         </div>
