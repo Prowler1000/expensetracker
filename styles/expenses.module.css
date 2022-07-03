@@ -26,6 +26,10 @@
 
 .primaryCategoryContainer {
     user-select: none;
+    border-top: var(--border);
+}
+.primaryCategoryContainer:last-of-type {
+    border-bottom: var(--border)
 }
 
 .primaryOverviewContainer {
@@ -33,7 +37,6 @@
     display: flex;
     flex-wrap: wrap;
     width: 100%;
-    border-bottom: var(--border);
 }
 .primaryOverviewContainer :hover{
     cursor: pointer;

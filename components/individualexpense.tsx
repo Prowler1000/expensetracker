@@ -12,7 +12,6 @@ interface IndividualExpenseProps {
 }
 
 export default function IndividualExpense(props: IndividualExpenseProps) {
-    console.log(props.expense);
     const expenseDate = 'lastOccurance' in props.expense ? props.expense.lastOccurance : props.expense.date
 
     return (
@@ -28,7 +27,7 @@ export default function IndividualExpense(props: IndividualExpenseProps) {
                 {props.expense.name}
             </div>
             <div className={styles.cost} key={`${props.baseKey}-cost`}>
-                ${props.expense.cost.toFixed(2)}
+                ${(props.expense.cost * props.expense.taxRate).toFixed(2)}
             </div>
             <div className={styles.quantity} key={`${props.baseKey}-quantity`}>
                 {
@@ -54,7 +53,11 @@ export default function IndividualExpense(props: IndividualExpenseProps) {
             <div className={styles.frequency} key={`${props.baseKey}-next`}>
                 {
                     'nextOccurance' in props.expense ?
-                        `Next Occurance: ${new Date(props.expense.nextOccurance).toLocaleDateString()}` :
+                        `Next Occurance: ${new Date(props.expense.nextOccurance).toLocaleDateString(undefined, {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                        })}` :
                         <div className={styles.centerTextNext} key={`${props.baseKey}-next-center`}>
                             N/A
                         </div>
