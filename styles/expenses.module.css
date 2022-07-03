@@ -83,3 +83,15 @@
 .displayNone {
     display: none;
 }
+
+.indivExpenseContainer {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+.indivExpenseContainer * {
+    margin: auto;
+    text-justify: left;
+    justify-content: left;
+    width: 10%;
+}

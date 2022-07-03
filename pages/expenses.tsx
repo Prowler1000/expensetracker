@@ -3,6 +3,9 @@ import prisma from '../lib/prisma';
 import { PrimaryType, RecurringExpense, SingleExpense, SubType, Tax, SubtypesToPrimaryType, Prisma, RecurranceScheme} from 'prisma/prisma-client';
 import { useState, useEffect } from 'react';
 import { style } from '@mui/system';
+import { IsDefined, StripUndefined } from '../lib/dry';
+import IndividualExpense from '../components/individualexpense';
+import { InternalRecurringExpense, InternalSingleExpense, SerializableRecurringExpense, SerializableSingleExpense } from '../lib/api-objects';
 
 /*
     Server side data fetching
@@ -32,35 +35,33 @@ export async function getServerSideProps(context: any) {
     const props: ExpensesProps = {
         earliestDate: monthPrior.getTime(),
         singleExpenses: dbSingleExpenses.map(x => {
-            let singleExpense: SerializableSingleExpense = {
-                id: x.id,
+            let singleExpense: InternalSingleExpense = {
                 date: x.date.getTime(),
                 name: x.name,
                 cost: x.cost,
                 quantity: x.quantity,
                 has_gst: x.has_gst,
                 has_pst: x.has_pst,
-                primaryTypeId: x.primaryTypeId,
-                subTypeId: x.subTypeId,
+                primaryType: StripUndefined(dbPrimaryTypes.find(p => p.id === x.primaryTypeId)),
+                subType: StripUndefined(dbSubTypes.find(s => s.id === x.subTypeId)),
                 taxRate: calcTaxRate(x, dbTaxes)
             }
             return singleExpense;
         }),
         recurringExpenses: dbRecurringExpenses.map(x => {
             const lastOccurance = getLastOccurance(x);
-            let recurringExpense: SerializableRecurringExpense = {
-                id: x.id,
-                dateStarted: x.dateStarted.getTime(),
+            let recurringExpense: InternalRecurringExpense = {
+                date: x.dateStarted.getTime(),
                 frequency: x.frequency,
                 name: x.name,
                 cost: x.cost,
                 has_gst: x.has_gst,
                 has_pst: x.has_pst,
-                primaryTypeId: x.primaryTypeId,
-                subTypeId: x.subTypeId,
+                primaryType: StripUndefined(dbPrimaryTypes.find(p => p.id === x.primaryTypeId)),
+                subType: StripUndefined(dbSubTypes.find(s => s.id === x.subTypeId)),
                 taxRate: calcRecurringTaxRate(x, lastOccurance, dbTaxes),
-                lastOccuranceDate: lastOccurance.getTime(),
-                nextOccuranceDate: getNextOccurance(x, lastOccurance).getTime()
+                lastOccurance: lastOccurance.getTime(),
+                nextOccurance: getNextOccurance(x, lastOccurance).getTime()
             }
             return recurringExpense;
         }),
@@ -89,8 +90,8 @@ export async function getServerSideProps(context: any) {
 */
 interface ExpensesProps {
     earliestDate: number
-    singleExpenses: SerializableSingleExpense[],
-    recurringExpenses: SerializableRecurringExpense[],
+    singleExpenses: InternalSingleExpense[],
+    recurringExpenses: InternalRecurringExpense[],
     taxes: SerializableTax[],
     primaryTypes: PrimaryType[],
     subTypes: (SubType & {
@@ -99,41 +100,9 @@ interface ExpensesProps {
 }
 
 /**
-    Contains all data, plus some extras, of a Prisma SingleExpense
-    object in a json serializable format
-*/
-interface SerializableSingleExpense {
-    id: number,
-    date: number,
-    name: string,
-    cost: number,
-    quantity: number,
-    has_gst: boolean,
-    has_pst: boolean,
-    primaryTypeId: number,
-    subTypeId: number,
-    taxRate: number,
-}
-
-/**
     Contains all data, plus some extras, of a Prisma RecurringExpense
     object in a json serializable format
 */
-interface SerializableRecurringExpense {
-    id: number,
-    dateStarted: number,
-    dateEnded?: number,
-    lastOccuranceDate: number,
-    nextOccuranceDate: number,
-    frequency: RecurranceScheme,
-    name: string,
-    cost: number,
-    has_gst: boolean,
-    has_pst: boolean,
-    primaryTypeId: number,
-    subTypeId: number,
-    taxRate: number,
-}
 
 /**
     Contains all data, plus some extras, of a Prisma Tax
@@ -220,8 +189,10 @@ function getLastOccurance(expense: RecurringExpense): Date {
         }
     } 
     else if (expense.frequency === RecurranceScheme.BIWEEKLY) {
-        // Gotta figure this out!
-        console.error("Haven't implemented bi-weekly stuff yet!");
+        const intervals_since = Math.floor(
+            (lastOccurance.getTime() - expense.dateStarted.getTime())
+            / 1209600000)
+        lastOccurance = new Date(expense.dateStarted.getTime() + (intervals_since * 1209600000))
     } 
     else if (expense.frequency === RecurranceScheme.MONTHLY) {
         let expenseDayOfMonth = expense.dateStarted.getDate();
@@ -252,13 +223,16 @@ function getLastOccurance(expense: RecurringExpense): Date {
         }
     } 
     else if (expense.frequency === RecurranceScheme.QUARTERLY) {
-        
+        console.log("ERROR: NOT IMPLEMENTED")
+        lastOccurance = new Date(0)
     } 
     else if (expense.frequency === RecurranceScheme.SEMIANNUALLY) {
-
+        console.log("ERROR: NOT IMPLEMENTED")
+        lastOccurance = new Date(0)
     } 
     else if (expense.frequency === RecurranceScheme.ANNUALLY) {
-
+        console.log("ERROR: NOT IMPLEMENTED")
+        lastOccurance = new Date(0)
     }
     return new Date(lastOccurance.toDateString()); // Retuns last occurance, stripping time element
 }
@@ -286,7 +260,7 @@ function getNextOccurance(expense: RecurringExpense, lastOccurance: Date): Date 
 }
 
 /** Totals up passed array of single expenses */
-function totalSingleExpenses(expenses: SerializableSingleExpense[]): number {
+function totalSingleExpenses(expenses: InternalSingleExpense[]): number {
     let total = 0.0;
     expenses.forEach(expense => 
         total += (expense.cost * expense.taxRate)
@@ -294,29 +268,29 @@ function totalSingleExpenses(expenses: SerializableSingleExpense[]): number {
     return total;
 }
 /** Totals up passed array of recurring expenses */
-function totalRecurringExpenses(expenses: SerializableRecurringExpense[], fromDate: number): number {
+function totalRecurringExpenses(expenses: InternalRecurringExpense[], fromDate: number): number {
     let total = 0.0;
     expenses.forEach(expense =>{
-        if (expense.lastOccuranceDate >= fromDate)
+        if (expense.lastOccurance >= fromDate)
             total += (expense.cost * expense.taxRate)
     })
     return total;
 }
 /** Adds total cost of each expense to appropriate type total */
-function typeTotalSingleExpenses(expenses: SerializableSingleExpense[], pTypes: PrimeTypeTotal[], sTypes?: SubTypeTotal[]) {
+function typeTotalSingleExpenses(expenses: InternalSingleExpense[], pTypes: PrimeTypeTotal[], sTypes?: SubTypeTotal[]) {
     expenses.forEach(expense => {
-        let pTypeTotal = pTypes.find(x => x.type.id === expense.primaryTypeId);
-        let sTypeTotal = sTypes?.find(x => x.primaryType?.id === expense.primaryTypeId && x.subType.id === expense.subTypeId);
+        let pTypeTotal = pTypes.find(x => x.type.id === expense.primaryType.id);
+        let sTypeTotal = sTypes?.find(x => x.primaryType?.id === expense.primaryType.id && x.subType.id === expense.subType.id);
         if (pTypeTotal) pTypeTotal.total += (expense.cost * expense.taxRate);
         if (sTypeTotal) sTypeTotal.total += (expense.cost * expense.taxRate);
     }) 
 }
 /** Adds total cost of each expense to appropriate type total */
-function typeTotalRecurringExpense(expenses: SerializableRecurringExpense[], fromDate: number, pTypes: PrimeTypeTotal[], sTypes?: SubTypeTotal[]) {
+function typeTotalRecurringExpense(expenses: InternalRecurringExpense[], fromDate: number, pTypes: PrimeTypeTotal[], sTypes?: SubTypeTotal[]) {
     expenses.forEach(expense => {
-        if (expense.lastOccuranceDate >= fromDate){
-            let pTypeTotal = pTypes.find(x => x.type.id === expense.primaryTypeId);
-            let sTypeTotal = sTypes?.find(x => x.primaryType?.id === expense.primaryTypeId && x.subType.id === expense.subTypeId);
+        if (expense.lastOccurance >= fromDate){
+            let pTypeTotal = pTypes.find(x => x.type.id === expense.primaryType.id);
+            let sTypeTotal = sTypes?.find(x => x.primaryType?.id === expense.primaryType.id && x.subType.id === expense.subType.id);
             if (pTypeTotal) pTypeTotal.total += (expense.cost * expense.taxRate);
             if (sTypeTotal) sTypeTotal.total += (expense.cost * expense.taxRate);
         }
@@ -351,7 +325,7 @@ function Expenses(props: ExpensesProps) {
         return tmpArray;
     }
     const initialInvidualExpenses = () => {
-        const tmp: JSX.Element[] = [];
+        const tmp: {element: JSX.Element, date: Date}[] = [];
         return tmp;
     }
 
@@ -367,16 +341,29 @@ function Expenses(props: ExpensesProps) {
 
     useEffect(() => {
         function generateIndividualExpenses() {
-            let array: JSX.Element[] = [];
+            let array: {element: JSX.Element, date: Date}[] = [];
             let counter = 0;
             singleExpenses.forEach(x => {
-                array.push(IndividualExpense(x, counter))
+                const entry: {element: JSX.Element, date: Date} = {
+                    element: 
+                    <IndividualExpense baseKey={`indiv-exp-${counter}`}
+                        expense={x}/>,
+                    date: new Date(x.date)
+                }
+                array.push(entry);
                 counter++;
             })
             recurringExpenses.forEach(x => {
-                array.push(IndividualExpense(x, counter));
+                const entry: {element: JSX.Element, date: Date} = {
+                    element: 
+                    <IndividualExpense baseKey={`indiv-exp-${counter}`}
+                        expense={x}/>,
+                    date: new Date(x.lastOccurance)
+                }
+                array.push(entry);
                 counter++;
             })
+            array.sort((a, b) => {return (b.date.getTime() - a.date.getTime())})
             return array;
         }
         setIndividualExpenses(generateIndividualExpenses())
@@ -465,23 +452,6 @@ function Expenses(props: ExpensesProps) {
             </div>
         )
     }
-
-    const IndividualExpense = (expense: SerializableSingleExpense | SerializableRecurringExpense, index: number) => {
-        let date = 'dateStarted' in expense ? expense.lastOccuranceDate : expense.date;
-        let name = expense.name;
-        let primeType = primaryTypes.find(x => x.id === expense.primaryTypeId);
-        let subType = subTypes.find(x => x.id === expense.subTypeId);
-        let cost = expense.cost;
-        let tax = (expense.cost * (expense.taxRate - 1)).toFixed(2);
-        let total = (expense.cost * expense.taxRate).toFixed(2);
-
-        const baseKey = `individualExpense-${index}`;
-        return (
-            <div className={styles.indivExpenseContainer} key={baseKey}>
-                {cost}
-            </div>
-        )
-    }
     
     return (
         <div className={styles.container}>
@@ -498,6 +468,9 @@ function Expenses(props: ExpensesProps) {
                     })}
                 </div>
                 <div className={styles.listedExpenses}>
+                    {indivialExpenses.map(x => {
+                        return x.element;
+                    })}
                 </div>
             </div>
         </div>

@@ -1,0 +1,34 @@
+.container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.container * {
+    margin: auto;
+    text-justify: left;
+    justify-content: left;
+    width: 10%;
+}
+
+.quantity {
+    display: flex;
+}
+
+.centerTextQuantity {
+    margin-left: 10%;
+    text-justify: left;
+    justify-content: left;
+}
+
+.centerTextFrequency {
+    margin-left: 25%;
+    text-justify: left;
+    justify-content: left;
+}
+
+.centerTextNext {
+    margin-left: 35%;
+    text-justify: left;
+    justify-content: left;
+}
