@@ -6,10 +6,10 @@ import { ExpenseRow, Frequency, PrimaryTypeMap } from '../../lib/expense-row';
 import { IsDefined, StripUndefined } from '../../lib/dry';
 import ExpenseInputRow from '../../components/expenseinputrow';
 
-export async function getServerSideProps({ params }) {
+export async function getServerSideProps(context: any) {
     return {
         props: {
-            type: params.type,
+            type: context.params.type
         }
     }
 }
