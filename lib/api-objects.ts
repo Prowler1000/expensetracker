@@ -15,7 +15,6 @@ export interface SerializableSingleExpense extends SerializableExpense{
 }
 
 export interface SerializableRecurringExpense extends SerializableExpense{
-    lastOccurance: number,
     frequency: string
 }
 
@@ -28,5 +27,6 @@ export interface InternalSingleExpense extends InternalExpense, SerializableSing
 }
 
 export interface InternalRecurringExpense extends InternalExpense, SerializableRecurringExpense {
+    lastOccurance: number,
     nextOccurance: number,
 }
