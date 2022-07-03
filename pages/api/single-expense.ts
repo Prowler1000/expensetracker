@@ -1,34 +1,29 @@
 import { Prisma } from '@prisma/client'
 import { create } from 'domain';
 import { NextApiRequest, NextApiResponse } from 'next';
+import { SerializableSingleExpense } from '../../lib/api-objects';
 import prisma from '../../lib/prisma'
 
 export default async function handle(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
-        if (req.body.length > 1) {
-            let data = req.body.map((val: { date: any; type: { connect: { id: any; }; }; subType: { connect: { id: any; }; }; name: any; cost: any; quantity: any; has_gst: any; has_pst: any; }) => {
-                let rVal;
-                rVal = {
-                    date: val.date,
-                    primaryTypeId: val.type.connect.id,
-                    subTypeId: val.subType.connect.id,
-                    name: val.name,
-                    cost: val.cost,
-                    quantity: val.quantity,
-                    has_gst: val.has_gst,
-                    has_pst: val.has_pst
-                }
-                return rVal;
-            })
-            const createMany = await prisma.singleExpense.createMany({
-                data: data,
-                skipDuplicates: true,
-            })
-        } else {
-            const createOne = await prisma.singleExpense.create({
-                data: req.body[0]
-            })
-        }
+        const singleExpenses = req.body as SerializableSingleExpense[]
+        let data: Prisma.SingleExpenseCreateManyInput[] = singleExpenses.map(expense => {
+            const singleExpense: Prisma.SingleExpenseCreateManyInput = {
+                date: (new Date(expense.date)).toISOString(),
+                primaryTypeId: expense.primaryType.id,
+                subTypeId: expense.subType.id,
+                name: expense.name,
+                cost: expense.cost,
+                quantity: expense.quantity,
+                has_gst: expense.has_gst,
+                has_pst: expense.has_pst
+            }
+            return singleExpense
+        })
+        const createMany = await prisma.singleExpense.createMany({
+            data: data,
+            skipDuplicates: true
+        })
     }
 
     res.status(200).json({});

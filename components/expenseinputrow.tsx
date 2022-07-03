@@ -6,7 +6,7 @@ import { StripUndefined } from '../lib/dry';
 import Textbox from './textbox';
 
 interface ExpenseInputProps {
-    isRecurring: boolean,
+    isRecurring?: boolean,
     rowState: ExpenseRow,
     setRowState: (arg0: ExpenseRow) => void,
     types: PrimaryTypeMap[],
@@ -143,7 +143,7 @@ export default function ExpenseInputRow(props: ExpenseInputProps) {
                 <Textbox onChangeCallback={handleCostChange} type="number" className={styles.paramInput}></Textbox>
             </div>
 
-            {props.isRecurring ? '' : quantityBox(props.baseKey, handleQuantityChange)}
+            {props.rowState.isRecurring ? '' : quantityBox(props.baseKey, handleQuantityChange)}
 
             <div className={`${styles.paramContainer} ${styles.taxContainer}`} key={`${props.baseKey}-tax-container`}>
                 <div className={styles.paramTitle} key={`${props.baseKey}-cost-title`}>Product Tax Scheme:</div>
@@ -153,7 +153,7 @@ export default function ExpenseInputRow(props: ExpenseInputProps) {
                 />
             </div>
 
-            {props.isRecurring ? frequencyBox(props.baseKey, handleFrequencyChange, 
+            {props.rowState.isRecurring ? frequencyBox(props.baseKey, handleFrequencyChange, 
                 Object.keys(Frequency).filter((item) => isNaN(Number(item))), Frequency.MONTHLY) : ''}
 
         </div>
