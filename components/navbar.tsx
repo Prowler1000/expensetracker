@@ -7,8 +7,8 @@ function Navbar(props: any) {
             <div className={styles.bar}>
                 <div className={styles.buttons}>
                     <Link href="/expenses">Expenses</Link>
-                    <Link href="/add">Add Single Expense</Link>
-                    <Link href="/addrecurring">Add Recurring Expense</Link>
+                    <Link href="/add/single-expense">Add Single Expense</Link>
+                    <Link href="/add/recurring-expense">Add Recurring Expense</Link>
                 </div>
             </div>
         </div>

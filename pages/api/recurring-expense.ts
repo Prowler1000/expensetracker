@@ -6,19 +6,19 @@ import { SerializableRecurringExpense } from '../../lib/api-objects';
 
 export default async function handle(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
-        let body: SerializableRecurringExpense[] = req.body;
-        let data = body.map(x => {
-            const entry: Prisma.RecurringExpenseCreateManyInput = {
-                dateStarted: new Date(x.date).toISOString(),
-                name: x.name,
-                cost: x.cost,
-                frequency: RecurranceScheme[x.frequencyString as keyof typeof RecurranceScheme],
-                primaryTypeId: x.primaryType.id,
-                subTypeId: x.subType.id,
-                has_gst: x.has_gst,
-                has_pst: x.has_pst
+        const recurringExpenses = req.body as SerializableRecurringExpense[];
+        const data: Prisma.RecurringExpenseCreateManyInput[] = recurringExpenses.map(expense => {
+            const recurringExpense: Prisma.RecurringExpenseCreateManyInput = {
+                dateStarted: (new Date(expense.date)).toISOString(),
+                name: expense.name,
+                cost: expense.cost,
+                frequency: RecurranceScheme[expense.frequency as keyof typeof RecurranceScheme],
+                primaryTypeId: expense.primaryType.id,
+                subTypeId: expense.subType.id,
+                has_gst: expense.has_gst,
+                has_pst: expense.has_pst
             }
-            return entry;
+            return recurringExpense
         })
         const createMany = await prisma.recurringExpense.createMany({
             data: data,
