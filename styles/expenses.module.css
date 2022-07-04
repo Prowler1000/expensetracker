@@ -24,12 +24,18 @@
     font-size: 40px;
 }
 
+.categorizedTotals {
+    display: flex;
+    flex-wrap: wrap;
+    border-bottom: var(--border)
+}
+
 .primaryCategoryContainer {
+    width: 20%;
     user-select: none;
     border-top: var(--border);
 }
 .primaryCategoryContainer:last-of-type {
-    border-bottom: var(--border)
 }
 
 .primaryOverviewContainer {
