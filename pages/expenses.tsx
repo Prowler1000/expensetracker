@@ -393,7 +393,8 @@ function Expenses(props: ExpensesProps) {
                     {primaryCategorizedTotals.map((primeType, index) => {
                         return (
                             <PrimaryCategoryTotal 
-                                baseKey={`category-container-${index}`}
+                                key={`category-container-${index}`}
+                                baseKey={`category-container-${index}-baseKey`}
                                 primaryTotal={primeType}
                                 subTypeTotals={subCategorizedTotals.filter(x => x.primaryType?.id === primeType.type.id)}
                                 totalRows={maxRows}
