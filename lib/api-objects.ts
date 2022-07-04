@@ -30,3 +30,23 @@ export interface InternalRecurringExpense extends InternalExpense, SerializableR
     lastOccurance: number,
     nextOccurance: number,
 }
+
+
+
+/**
+    For adding totals of primary types
+*/
+export interface PrimeTypeTotal {
+    type: PrimaryType,
+    total: number
+}
+
+/**
+    For adding totals of sub types with the ability
+    to add relevant primary type
+*/
+export interface SubTypeTotal {
+    primaryType?: PrimaryType,
+    subType: SubType,
+    total: number
+}

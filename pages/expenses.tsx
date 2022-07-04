@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react';
 import { style } from '@mui/system';
 import { IsDefined, StripUndefined } from '../lib/dry';
 import IndividualExpense from '../components/individualexpense';
-import { InternalRecurringExpense, InternalSingleExpense, SerializableRecurringExpense, SerializableSingleExpense } from '../lib/api-objects';
+import { InternalRecurringExpense, InternalSingleExpense, PrimeTypeTotal, SerializableRecurringExpense, SerializableSingleExpense, SubTypeTotal } from '../lib/api-objects';
+import PrimaryCategoryTotal from '../components/primecategoryoverview';
 
 /*
     Server side data fetching
@@ -115,25 +116,6 @@ interface SerializableTax {
     gst: number
 }
 
-/**
-    For adding totals of primary types
-*/
-interface PrimeTypeTotal {
-    type: PrimaryType,
-    total: number
-}
-
-/**
-    For adding totals of sub types with the ability
-    to add relevant primary type
-*/
-interface SubTypeTotal {
-    primaryType?: PrimaryType,
-    subType: SubType,
-    total: number
-}
-
-
 /*
     <---FUNCTIONS--->
 */
@@ -177,6 +159,7 @@ function daysInMonth(month: number) {
 
 /** Gets the last time a RecurringExpense occured. As of writing, function is incomplete */
 function getLastOccurance(expense: RecurringExpense): Date {
+    // I made the mistake of using this object as the current date. Changing this will require further changes
     let lastOccurance = new Date(); // Object to store when the last occurance was
     if (expense.frequency === RecurranceScheme.DAILY) {
         // Shouldn't do anything, it happens every day
@@ -237,7 +220,7 @@ function getLastOccurance(expense: RecurringExpense): Date {
     return new Date(lastOccurance.toDateString()); // Retuns last occurance, stripping time element
 }
 
-/** Gets the next time a RecurringExpense should occur */
+/** Gets the next time a RecurringExpense should occur. !!!Doesn't work right, issues with monthly for sure */
 function getNextOccurance(expense: RecurringExpense, lastOccurance: Date): Date {
     ///!!! CHANGE TO SWITCH/CASE! THIS IS IMPOSSIBLE TO READ
     let nextOccurance = new Date(lastOccurance.toDateString());
@@ -336,7 +319,6 @@ function Expenses(props: ExpensesProps) {
     const [taxes, setTaxes] = useState(initialTaxes);
     const [primaryTypes, setPrimaryTypes] = useState(initialPrimaryTypes);
     const [subTypes, setSubTypes] = useState(initialSubTypes);
-    const [showSubCategories, setShowSubCategories] = useState(initialShowSubCategories);
     const [indivialExpenses, setIndividualExpenses] = useState(initialInvidualExpenses);
 
     useEffect(() => {
@@ -395,63 +377,10 @@ function Expenses(props: ExpensesProps) {
     // Add recent expenses into their appropriate category totals
     typeTotalSingleExpenses(singleExpenses, primaryCategorizedTotals, subCategorizedTotals);
     typeTotalRecurringExpense(recurringExpenses, fromDate.getTime(), primaryCategorizedTotals, subCategorizedTotals);
-
-    /**
-        Toggles each sub category. Originally each sub cat was supposed to be positioned absolutely
-        to allow for nice animations but that got complicated and I just never ended up doing it.
-    */
-    function toggleShowSubCategories(event: React.MouseEvent<HTMLDivElement, MouseEvent>, index: number) {
-        let showSubCategoriesCopy = [...showSubCategories];
-        showSubCategoriesCopy[index] = !showSubCategoriesCopy[index];
-        setShowSubCategories(showSubCategoriesCopy);
-        const doDisplay = showSubCategoriesCopy[index];
-
-
-        const spacer = document.getElementById(`${index}-spacer`);
-        const subCats = document.getElementById(`${index}-subCategories`);
-        const primeCatValue = document.getElementById(`${index}-primeCatValue`);
-        const rect = primeCatValue ? primeCatValue.getClientRects()[0] : event.currentTarget.getClientRects()[0];
-
-        if (subCats) {
-            subCats.style.top = `${rect.bottom.toFixed(0)}px`;
-        }
-    }
-
-    /** React object to show the total of a primary type with its relevant sub types */
-    const PrimaryCategoryTotal = (primeType: PrimeTypeTotal, subTypes: SubTypeTotal[], index: number) => {
-        let baseKey = `${primeType.type.id}-${index}`;
-        //if (index > 0) return (<div></div>)
-        return (
-            <div className={styles.primaryCategoryContainer} key={baseKey}>
-
-                <div className={styles.primaryOverviewContainer} key={`${baseKey}-primeOverviewContainer`}  onClick={(e) => toggleShowSubCategories(e, index)}>
-                    <div className={styles.primaryCategoryTitle} key={`${baseKey}-title`}>
-                        {primeType.type.name}:
-                    </div>
-                    <div className={styles.primaryCategoryValue} key={`${baseKey}-value`} id={`${index}-primeCatValue`}>
-                        ${primeType.total.toFixed(2)}
-                    </div>
-                </div>
-
-                <div className={`${styles.subCategorySpacer}`} key={`${baseKey}-subSpacer`} id={`${index}-spacer`}/>
-                <div className={showSubCategories[index] ? styles.subCategoriesContainer : styles.displayNone} key={`${baseKey}-subCat`} id={`${index}-subCategories`}>
-                    {subTypes.map((type,index) => {
-                        let subBaseKey = `${baseKey}-${index}-subCats`;
-                        return (
-                            <div className={styles.subCategoryContainer} key={subBaseKey}>
-                                <div className={styles.subCategoryTitle} key={`${subBaseKey}-title`}>
-                                    {type.subType.name}:
-                                </div>
-                                <div className={styles.subCategoryValue} key={`${subBaseKey}-value`}>
-                                    ${type.total.toFixed(2)}
-                                </div>
-                            </div>
-                        )
-                    })}
-                </div>
-            </div>
-        )
-    }
+    let maxRows = 0;
+    primaryCategorizedTotals.forEach(p => 
+        maxRows = Math.max(maxRows,
+            subCategorizedTotals.filter(s => s.primaryType?.id === p.type.id).length))
     
     return (
         <div className={styles.container}>
@@ -462,9 +391,13 @@ function Expenses(props: ExpensesProps) {
                 </div>
                 <div className={styles.categorizedTotals}>
                     {primaryCategorizedTotals.map((primeType, index) => {
-                        return PrimaryCategoryTotal(primeType, 
-                            subCategorizedTotals.filter(x => x.primaryType?.id === primeType.type.id),
-                            index)
+                        return (
+                            <PrimaryCategoryTotal 
+                                baseKey={`category-container-${index}`}
+                                primaryTotal={primeType}
+                                subTypeTotals={subCategorizedTotals.filter(x => x.primaryType?.id === primeType.type.id)}
+                                totalRows={maxRows}
+                            />)
                     })}
                 </div>
                 <div className={styles.listedExpenses}>
