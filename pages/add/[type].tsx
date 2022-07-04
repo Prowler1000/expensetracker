@@ -90,7 +90,7 @@ const expenseRowToSerializable = (row: ExpenseRow): SerializableSingleExpense | 
             subType: row.subType,
             name: row.name,
             cost: row.cost,
-            quantity: StripUndefined(row.quantity),
+            quantity: Math.max(1, StripUndefined(row.quantity)),
             has_gst: row.has_gst,
             has_pst: row.has_pst
         }
