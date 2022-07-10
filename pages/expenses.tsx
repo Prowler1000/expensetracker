@@ -12,8 +12,8 @@ import PrimaryCategoryTotal from '../components/primecategoryoverview';
     Server side data fetching
 */
 export async function getServerSideProps(context: any) {
-    let monthPrior = new Date(1657083600000); // Will store the date of 1 month ago
-    //monthPrior.setMonth(monthPrior.getMonth() - 1);
+    let monthPrior = new Date(); // Will store the date of 1 month ago
+    monthPrior.setMonth(monthPrior.getMonth() - 1);
 
     // Fetches single expenses that occured on or after monthPrior
     let dbSingleExpenses = await prisma.singleExpense.findMany({
