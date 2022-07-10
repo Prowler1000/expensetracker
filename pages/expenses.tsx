@@ -12,8 +12,8 @@ import PrimaryCategoryTotal from '../components/primecategoryoverview';
     Server side data fetching
 */
 export async function getServerSideProps(context: any) {
-    let monthPrior = new Date(); // Will store the date of 1 month ago
-    monthPrior.setMonth(monthPrior.getMonth() - 1);
+    let monthPrior = new Date(1657083600000); // Will store the date of 1 month ago
+    //monthPrior.setMonth(monthPrior.getMonth() - 1);
 
     // Fetches single expenses that occured on or after monthPrior
     let dbSingleExpenses = await prisma.singleExpense.findMany({
@@ -246,7 +246,7 @@ function getNextOccurance(expense: RecurringExpense, lastOccurance: Date): Date 
 function totalSingleExpenses(expenses: InternalSingleExpense[]): number {
     let total = 0.0;
     expenses.forEach(expense => 
-        total += (expense.cost * expense.taxRate)
+        total += (expense.cost * expense.taxRate) * expense.quantity
     );
     return total;
 }
@@ -352,6 +352,7 @@ function Expenses(props: ExpensesProps) {
     }, [recurringExpenses, singleExpenses])
 
     // Absolute total of all purchases
+    console.log(singleExpenses);
     const absoluteTotal = (totalSingleExpenses(singleExpenses) 
         + totalRecurringExpenses(recurringExpenses, fromDate.getTime())).toFixed(2);
     
@@ -396,7 +397,7 @@ function Expenses(props: ExpensesProps) {
                                 key={`category-container-${index}`}
                                 baseKey={`category-container-${index}-baseKey`}
                                 primaryTotal={primeType}
-                                subTypeTotals={subCategorizedTotals.filter(x => x.primaryType?.id === primeType.type.id)}
+                                subTypeTotals={subCategorizedTotals.filter(x => x.primaryType?.id === primeType.type.id).sort((a,b) => b.total - a.total)}
                                 totalRows={maxRows}
                             />)
                     })}
